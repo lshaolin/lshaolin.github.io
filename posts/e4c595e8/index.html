@@ -1,0 +1,467 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ShardingSphere-JDBC原理与使用 | 毛毛是只猫</title><meta name="description" content="ShardingSphere-JDBC原理与使用"><meta name="keywords" content="分库分表,ShardingSphere-JDBC"><meta name="author" content="毛毛是只猫,shaolin5772@gmail.com"><meta name="copyright" content="毛毛是只猫"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.ico"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta name="google-site-verification" content="Lm0ZzjjDMCHOP7hcY8bfpRZGIaWB6o9v_dc_2W9Q_v8"/><meta name="msvalidate.01" content="E375EB81C6D19EA02C6C466312C77F5A"/><meta name="baidu-site-verification" content="Q883WJJeIi"/><meta name="twitter:card" content="summary"><meta name="twitter:title" content="ShardingSphere-JDBC原理与使用"><meta name="twitter:description" content="ShardingSphere-JDBC原理与使用"><meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/1.png"><meta property="og:type" content="article"><meta property="og:title" content="ShardingSphere-JDBC原理与使用"><meta property="og:url" content="http://lshaolin.github.io/posts/e4c595e8/"><meta property="og:site_name" content="毛毛是只猫"><meta property="og:description" content="ShardingSphere-JDBC原理与使用"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/1.png"><script src="https://cdn.jsdelivr.net/npm/js-cookie/dist/js.cookie.min.js"></script><script>var autoChangeMode = '1'
+var t = Cookies.get("theme")
+if (autoChangeMode == '1'){
+  var isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+  var isLightMode = window.matchMedia("(prefers-color-scheme: light)").matches
+  var isNotSpecified = window.matchMedia("(prefers-color-scheme: no-preference)").matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined){
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport){
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour < 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+  }
+  } else if (t == 'light') activateLightMode()
+  else activateDarkMode()
+
+} else if (autoChangeMode == '2'){
+  now = new Date();
+  hour = now.getHours();
+  isNight = hour < 6 || hour >= 18
+  if(t === undefined) isNight? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode() 
+} else {
+  if ( t == 'dark' ) activateDarkMode()
+  else if ( t == 'light') activateLightMode()
+}
+
+function activateDarkMode(){
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+    document.querySelector('meta[name="theme-color"]').setAttribute('content','#000')
+  }
+}
+function activateLightMode(){
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#fff')
+  }
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="canonical" href="http://lshaolin.github.io/posts/e4c595e8/"><link rel="prev" title="常见Bean映射工具分析评测" href="http://lshaolin.github.io/posts/818596de/"><link rel="next" title="Java为啥计算时间从1970-1-1开始" href="http://lshaolin.github.io/posts/8a25b5de/"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"cookieDomain":"https://lshaolin.github.io/","msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: undefined,
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  highlightShrink: 'false',
+  isFontAwesomeV5: false,
+  isPhotoFigcaption: true
+  
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isSidebar: true  
+  }</script><noscript><style>
+#page-header {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript><meta name="generator" content="Hexo 4.2.0"></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avatar.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">17</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">20</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">7</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于</span></a></div></div></div></div><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true">     </i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#shardingsphere-jdbc是什么"><span class="toc-number">1.</span> <span class="toc-text"> ShardingSphere-JDBC是什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#shardingsphere-jdbc的核心功能"><span class="toc-number">2.</span> <span class="toc-text"> ShardingSphere-JDBC的核心功能</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#数据分片"><span class="toc-number">2.1.</span> <span class="toc-text"> 数据分片</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#垂直分片"><span class="toc-number">2.1.1.</span> <span class="toc-text"> 垂直分片</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#水平分片"><span class="toc-number">2.1.2.</span> <span class="toc-text"> 水平分片</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分布式事务"><span class="toc-number">2.2.</span> <span class="toc-text"> 分布式事务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#本地事务"><span class="toc-number">2.2.1.</span> <span class="toc-text"> 本地事务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#两阶段提交"><span class="toc-number">2.2.2.</span> <span class="toc-text"> 两阶段提交</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#柔性事务"><span class="toc-number">2.2.3.</span> <span class="toc-text"> 柔性事务</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#读写分离"><span class="toc-number">2.3.</span> <span class="toc-text"> 读写分离</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分布式治理"><span class="toc-number">2.4.</span> <span class="toc-text"> 分布式治理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#核心概念"><span class="toc-number">3.</span> <span class="toc-text"> 核心概念</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#逻辑表"><span class="toc-number">3.1.</span> <span class="toc-text"> 逻辑表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#真实表"><span class="toc-number">3.2.</span> <span class="toc-text"> 真实表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据节点"><span class="toc-number">3.3.</span> <span class="toc-text"> 数据节点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#绑定表"><span class="toc-number">3.4.</span> <span class="toc-text"> 绑定表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#广播表"><span class="toc-number">3.5.</span> <span class="toc-text"> 广播表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分片键"><span class="toc-number">3.6.</span> <span class="toc-text"> 分片键</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分片算法"><span class="toc-number">3.7.</span> <span class="toc-text"> 分片算法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分片策略"><span class="toc-number">3.8.</span> <span class="toc-text"> 分片策略</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sql-hint"><span class="toc-number">3.9.</span> <span class="toc-text"> SQL Hint</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分布式主键"><span class="toc-number">3.10.</span> <span class="toc-text"> 分布式主键</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#shardingsphere-jdbc内核剖析"><span class="toc-number">4.</span> <span class="toc-text"> ShardingSphere-JDBC内核剖析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#sql解析"><span class="toc-number">4.1.</span> <span class="toc-text"> SQL解析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sql-路由"><span class="toc-number">4.2.</span> <span class="toc-text"> SQL 路由</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#分片路由"><span class="toc-number">4.2.1.</span> <span class="toc-text"> 分片路由</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#直接路由"><span class="toc-number">4.2.1.1.</span> <span class="toc-text"> 直接路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#标准路由"><span class="toc-number">4.2.1.2.</span> <span class="toc-text"> 标准路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#笛卡尔路由"><span class="toc-number">4.2.1.3.</span> <span class="toc-text"> 笛卡尔路由</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#广播路由"><span class="toc-number">4.2.2.</span> <span class="toc-text"> 广播路由</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#全库表路由"><span class="toc-number">4.2.2.1.</span> <span class="toc-text"> 全库表路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#全库路由"><span class="toc-number">4.2.2.2.</span> <span class="toc-text"> 全库路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#全实例路由"><span class="toc-number">4.2.2.3.</span> <span class="toc-text"> 全实例路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#单播路由"><span class="toc-number">4.2.2.4.</span> <span class="toc-text"> 单播路由</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#阻断路由"><span class="toc-number">4.2.2.5.</span> <span class="toc-text"> 阻断路由</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sql改写"><span class="toc-number">4.3.</span> <span class="toc-text"> sql改写</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#正确性改写"><span class="toc-number">4.3.1.</span> <span class="toc-text"> 正确性改写</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#标识符改写"><span class="toc-number">4.3.2.</span> <span class="toc-text"> 标识符改写</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#补列"><span class="toc-number">4.3.3.</span> <span class="toc-text"> 补列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#分页修正"><span class="toc-number">4.3.4.</span> <span class="toc-text"> 分页修正</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#批量拆分"><span class="toc-number">4.3.5.</span> <span class="toc-text"> 批量拆分</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#优化改写"><span class="toc-number">4.3.6.</span> <span class="toc-text"> 优化改写</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#单节点优化"><span class="toc-number">4.3.6.1.</span> <span class="toc-text"> 单节点优化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#流式归并优化"><span class="toc-number">4.3.6.2.</span> <span class="toc-text"> 流式归并优化</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sql执行"><span class="toc-number">4.4.</span> <span class="toc-text"> sql执行</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#连接模式"><span class="toc-number">4.4.1.</span> <span class="toc-text"> 连接模式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#内存限制模式"><span class="toc-number">4.4.1.1.</span> <span class="toc-text"> 内存限制模式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#连接限制模式"><span class="toc-number">4.4.1.2.</span> <span class="toc-text"> 连接限制模式</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#自动化执行引擎"><span class="toc-number">4.4.2.</span> <span class="toc-text"> 自动化执行引擎</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#准备阶段"><span class="toc-number">4.4.2.1.</span> <span class="toc-text"> 准备阶段</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#执行阶段"><span class="toc-number">4.4.2.2.</span> <span class="toc-text"> 执行阶段</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#结果归并"><span class="toc-number">4.5.</span> <span class="toc-text"> 结果归并</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#遍历归并"><span class="toc-number">4.5.1.</span> <span class="toc-text"> 遍历归并</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#排序归并"><span class="toc-number">4.5.2.</span> <span class="toc-text"> 排序归并</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#分组归并"><span class="toc-number">4.5.3.</span> <span class="toc-text"> 分组归并</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#聚合归并"><span class="toc-number">4.5.4.</span> <span class="toc-text"> 聚合归并</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#分页归并"><span class="toc-number">4.5.5.</span> <span class="toc-text"> 分页归并</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#使用示例"><span class="toc-number">5.</span> <span class="toc-text"> 使用示例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#引入maven依赖"><span class="toc-number">5.1.</span> <span class="toc-text"> 引入Maven依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#基于spring-boot的规则配置"><span class="toc-number">5.2.</span> <span class="toc-text"> 基于Spring boot的规则配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#在spring中使用datasource"><span class="toc-number">5.3.</span> <span class="toc-text"> 在Spring中使用DataSource</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考"><span class="toc-number">6.</span> <span class="toc-text"> 参考</span></a></li></ol></div></div></div><div id="body-wrap"><div class="post-bg" id="nav" style="background-image: url(https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/1.png)"><div id="page-header"><span class="pull_left" id="blog_name"><a class="blog_title" id="site-name" href="/">毛毛是只猫</a></span><span class="pull_right menus"><div id="search_button"><a class="site-page social-icon search"><i class="fa fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fa fa-bars fa-fw" aria-hidden="true"></i></a></span></span></div><div id="post-info"><div id="post-title"><div class="posttitle">ShardingSphere-JDBC原理与使用</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2019-05-12 22:44:41"><i class="fa fa-calendar" aria-hidden="true"></i> 发表于 2019-05-12</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-10-29 15:49:48"><i class="fa fa-history" aria-hidden="true"></i> 更新于 2020-10-29</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fa fa-inbox post-meta__icon" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/">分库分表</a></span></div><div class="meta-secondline"> <span class="post-meta-wordcount"><i class="post-meta__icon fa fa-file-word-o" aria-hidden="true"></i><span>字数总计:</span><span class="word-count">15.6k</span><span class="post-meta__separator">|</span><i class="post-meta__icon fa fa-clock-o" aria-hidden="true"></i><span>阅读时长: 50 分钟</span></span></div><div class="meta-thirdline"><span class="post-meta-pv-cv"><span class="post-meta__separator">|</span><i class="fa fa-eye post-meta__icon" aria-hidden="true"> </i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"></span></div></div></div></div><main class="layout_post" id="content-inner"><article id="post"><div id="article-container"><h1 id="shardingsphere-jdbc是什么"><a class="markdownIt-Anchor" href="#shardingsphere-jdbc是什么"></a> ShardingSphere-JDBC是什么</h1>
+<p>ShardingSphere-JDBC（Sharding-JDBC）是一个分布式数据库中间件，定位为轻量级 Java 框架，在 Java 的 JDBC 层提供的额外服务。 它使用客户端直连数据库，以 jar 包形式提供服务，无需额外部署和依赖，可理解为增强版的 JDBC 驱动，完全兼容 JDBC 和各种 ORM 框架。</p>
+<ul>
+<li>适用于任何基于 JDBC 的 ORM 框架，如：JPA, Hibernate, Mybatis, Spring JDBC Template 或直接使用 JDBC。</li>
+<li>支持任何第三方的数据库连接池，如：DBCP, C3P0, BoneCP, Druid, HikariCP 等。</li>
+<li>支持任意实现 JDBC 规范的数据库，目前支持 MySQL，Oracle，SQLServer，PostgreSQL 以及任何遵循 SQL92 标准的数据库。</li>
+</ul>
+<p><img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/1.png"  alt="ShardingSphere-JDBC" /></p>
+<h1 id="shardingsphere-jdbc的核心功能"><a class="markdownIt-Anchor" href="#shardingsphere-jdbc的核心功能"></a> ShardingSphere-JDBC的核心功能</h1>
+<h2 id="数据分片"><a class="markdownIt-Anchor" href="#数据分片"></a> 数据分片</h2>
+<p>传统的将数据集中存储至单一数据节点的解决方案，在性能、可用性和运维成本这三方面已经难于满足互联网的海量数据场景。</p>
+<p>从性能方面来说，由于关系型数据库大多采用 B+ 树类型的索引，在数据量超过阈值的情况下，索引深度的增加也将使得磁盘访问的 IO 次数增加，进而导致查询性能的下降；同时，高并发访问请求也使得集中式数据库成为系统的最大瓶颈。</p>
+<p>从可用性的方面来讲，服务化的无状态型，能够达到较小成本的随意扩容，这必然导致系统的最终压力都落在数据库之上。而单一的数据节点，或者简单的主从架构，已经越来越难以承担。数据库的可用性，已成为整个系统的关键。</p>
+<p>从运维成本方面考虑，当一个数据库实例中的数据达到阈值以上，对于 DBA 的运维压力就会增大。数据备份和恢复的时间成本都将随着数据量的大小而愈发不可控。一般来讲，单一数据库实例的数据的阈值在 1TB 之内，是比较合理的范围。</p>
+<p>在传统的关系型数据库无法满足互联网场景需要的情况下，将数据存储至原生支持分布式的 NoSQL 的尝试越来越多。 但 NoSQL 对 SQL 的不兼容性以及生态圈的不完善，使得它们在与关系型数据库的博弈中始终无法完成致命一击，而关系型数据库的地位却依然不可撼动。</p>
+<p>数据分片指按照某个维度将存放在单一数据库中的数据分散地存放至多个数据库或表中以达到提升性能瓶颈以及可用性的效果。 数据分片的有效手段是对关系型数据库进行分库和分表。分库和分表均可以有效的避免由数据量超过可承受阈值而产生的查询瓶颈。 除此之外，分库还能够用于有效的分散对数据库单点的访问量；分表虽然无法缓解数据库压力，但却能够提供尽量将分布式事务转化为本地事务的可能，一旦涉及到跨库的更新操作，分布式事务往往会使问题变得复杂。 使用多主多从的分片方式，可以有效的避免数据单点，从而提升数据架构的可用性。</p>
+<p>通过分库和分表进行数据的拆分来使得各个表的数据量保持在阈值以下，以及对流量进行疏导应对高访问量，是应对高并发和海量数据系统的有效手段。 数据分片的拆分方式又分为垂直分片和水平分片。</p>
+<h3 id="垂直分片"><a class="markdownIt-Anchor" href="#垂直分片"></a> 垂直分片</h3>
+<p>按照业务拆分的方式称为垂直分片，又称为纵向拆分，它的核心理念是专库专用。 在拆分之前，一个数据库由多个数据表构成，每个表对应着不同的业务。而拆分之后，则是按照业务将表进行归类，分布到不同的数据库中，从而将压力分散至不同的数据库。 下图展示了根据业务需要，将用户表和订单表垂直分片到不同的数据库的方案。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/2.png"  alt="垂直分片" /><br />
+垂直分片往往需要对架构和设计进行调整。通常来讲，是来不及应对互联网业务需求快速变化的；而且，它也并无法真正的解决单点瓶颈。 垂直拆分可以缓解数据量和访问量带来的问题，但无法根治。如果垂直拆分之后，表中的数据量依然超过单节点所能承载的阈值，则需要水平分片来进一步处理。</p>
+<h3 id="水平分片"><a class="markdownIt-Anchor" href="#水平分片"></a> 水平分片</h3>
+<p>水平分片又称为横向拆分。 相对于垂直分片，它不再将数据根据业务逻辑分类，而是通过某个字段（或某几个字段），根据某种规则将数据分散至多个库或表中，每个分片仅包含数据的一部分。 例如：根据主键分片，偶数主键的记录放入 0 库（或表），奇数主键的记录放入 1 库（或表），如下图所示。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/3.png"  alt="水平分片" /><br />
+水平分片从理论上突破了单机数据量处理的瓶颈，并且扩展相对自由，是分库分表的标准解决方案。</p>
+<h2 id="分布式事务"><a class="markdownIt-Anchor" href="#分布式事务"></a> 分布式事务</h2>
+<p>数据库事务需要满足 ACID（原子性、一致性、隔离性、持久性）四个特性。</p>
+<ul>
+<li>原子性（Atomicity）指事务作为整体来执行，要么全部执行，要么全不执行。</li>
+<li>一致性（Consistency）指事务应确保数据从一个一致的状态转变为另一个一致的状态。-</li>
+<li>隔离性（Isolation）指多个事务并发执行时，一个事务的执行不应影响其他事务的执行。</li>
+<li>持久性（Durability）指已提交的事务修改数据会被持久保存。<br />
+在单一数据节点中，事务仅限于对单一数据库资源的访问控制，称之为本地事务。几乎所有的成熟的关系型数据库都提供了对本地事务的原生支持。 但是在基于微服务的分布式应用环境下，越来越多的应用场景要求对多个服务的访问及其相对应的多个数据库资源能纳入到同一个事务当中，分布式事务应运而生。</li>
+</ul>
+<p>关系型数据库虽然对本地事务提供了完美的 ACID 原生支持。 但在分布式的场景下，它却成为系统性能的桎梏。如何让数据库在分布式场景下满足 ACID 的特性或找寻相应的替代方案，是分布式事务的重点工作。</p>
+<h3 id="本地事务"><a class="markdownIt-Anchor" href="#本地事务"></a> 本地事务</h3>
+<p>在不开启任何分布式事务管理器的前提下，让每个数据节点各自管理自己的事务。 它们之间没有协调以及通信的能力，也并不互相知晓其他数据节点事务的成功与否。 本地事务在性能方面无任何损耗，但在强一致性以及最终一致性方面则力不从心。</p>
+<h3 id="两阶段提交"><a class="markdownIt-Anchor" href="#两阶段提交"></a> 两阶段提交</h3>
+<p>XA协议最早的分布式事务模型是由 X/Open 国际联盟提出的 X/Open Distributed Transaction Processing (DTP) 模型，简称 XA 协议。</p>
+<p>基于XA协议实现的分布式事务对业务侵入很小。 它最大的优势就是对使用方透明，用户可以像使用本地事务一样使用基于XA协议的分布式事务。 XA协议能够严格保障事务 ACID 特性。</p>
+<p>严格保障事务 ACID 特性是一把双刃剑。 事务执行在过程中需要将所需资源全部锁定，它更加适用于执行时间确定的短事务。 对于长事务来说，整个事务进行期间对数据的独占，将导致对热点数据依赖的业务系统并发性能衰退明显。 因此，在高并发的性能至上场景中，基于XA协议的分布式事务并不是最佳选择。</p>
+<h3 id="柔性事务"><a class="markdownIt-Anchor" href="#柔性事务"></a> 柔性事务</h3>
+<p>如果将实现了 ACID 的事务要素的事务称为刚性事务的话，那么基于 BASE 事务要素的事务则称为柔性事务。 BASE 是基本可用、柔性状态和最终一致性这三个要素的缩写。</p>
+<ul>
+<li>基本可用（Basically Available）保证分布式事务参与方不一定同时在线。</li>
+<li>柔性状态（Soft state）则允许系统状态更新有一定的延时，这个延时对客户来说不一定能够察觉。</li>
+<li>而最终一致性（Eventually consistent）通常是通过消息传递的方式保证系统的最终一致性。<br />
+在 ACID 事务中对隔离性的要求很高，在事务执行过程中，必须将所有的资源锁定。 柔性事务的理念则是通过业务逻辑将互斥锁操作从资源层面上移至业务层面。通过放宽对强一致性要求，来换取系统吞吐量的提升。</li>
+</ul>
+<p>基于 ACID 的强一致性事务和基于 BASE 的最终一致性事务都不是银弹，只有在最适合的场景中才能发挥它们的最大长处。 可通过下表详细对比它们之间的区别，以帮助开发者进行技术选型。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/4.png"  alt="事务对比" /></p>
+<h2 id="读写分离"><a class="markdownIt-Anchor" href="#读写分离"></a> 读写分离</h2>
+<p>面对日益增加的系统访问量，数据库的吞吐量面临着巨大瓶颈。 对于同一时刻有大量并发读操作和较少写操作类型的应用系统来说，将数据库拆分为主库和从库，主库负责处理事务性的增删改操作，从库负责处理查询操作，能够有效的避免由数据更新导致的行锁，使得整个系统的查询性能得到极大的改善。</p>
+<p>通过一主多从的配置方式，可以将查询请求均匀的分散到多个数据副本，能够进一步的提升系统的处理能力。 使用多主多从的方式，不但能够提升系统的吞吐量，还能够提升系统的可用性，可以达到在任何一个数据库宕机，甚至磁盘物理损坏的情况下仍然不影响系统的正常运行。</p>
+<p>与将数据根据分片键打散至各个数据节点的水平分片不同，读写分离则是根据SQL语义的分析，将读操作和写操作分别路由至主库与从库。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/5.png"  alt="读写分离" /><br />
+读写分离的数据节点中的数据内容是一致的，而水平分片的每个数据节点的数据内容却并不相同。将水平分片和读写分离联合使用，能够更加有效的提升系统性能。</p>
+<h2 id="分布式治理"><a class="markdownIt-Anchor" href="#分布式治理"></a> 分布式治理</h2>
+<p>随着数据规模的不断膨胀，使用多节点集群的分布式方式逐渐成为趋势。在这种情况下，如何高效、自动化管理集群节点，实现不同节点的协同工作，配置一致性，状态一致性，高可用性，可观测性等，就成为一个重要的挑战。</p>
+<p>ShardingSphere通过三个模块：治理、可观测性、集群管理（计划中）来处理。</p>
+<h1 id="核心概念"><a class="markdownIt-Anchor" href="#核心概念"></a> 核心概念</h1>
+<h2 id="逻辑表"><a class="markdownIt-Anchor" href="#逻辑表"></a> 逻辑表</h2>
+<p>水平拆分的数据库（表）的相同逻辑和数据结构表的总称。例：订单数据根据主键尾数拆分为 10 张表，分别是 t_order_0 到 t_order_9，他们的逻辑表名为 t_order。</p>
+<h2 id="真实表"><a class="markdownIt-Anchor" href="#真实表"></a> 真实表</h2>
+<p>在分片的数据库中真实存在的物理表。即上个示例中的 t_order_0 到 t_order_9。</p>
+<h2 id="数据节点"><a class="markdownIt-Anchor" href="#数据节点"></a> 数据节点</h2>
+<p>数据分片的最小单元。由数据源名称和数据表组成，例：ds_0.t_order_0。</p>
+<h2 id="绑定表"><a class="markdownIt-Anchor" href="#绑定表"></a> 绑定表</h2>
+<p>指分片规则一致的主表和子表。例如：t_order 表和 t_order_item 表，均按照 order_id 分片，则此两张表互为绑定表关系。绑定表之间的多表关联查询不会出现笛卡尔积关联，关联查询效率将大大提升。举例说明，如果 SQL 为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order o <span class="keyword">JOIN</span> t_order_item i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br></pre></td></tr></table></figure>
+<p>在不配置绑定表关系时，假设分片键 order_id 将数值 10 路由至第 0 片，将数值 11 路由至第 1 片，那么路由后的 SQL 应该为 4 条，它们呈现为笛卡尔积：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br></pre></td></tr></table></figure>
+<p>在配置绑定表关系后，路由的 SQL 应该为 2 条：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> i.* <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id <span class="keyword">WHERE</span> o.order_id <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">11</span>);</span><br></pre></td></tr></table></figure>
+<p>其中 t_order 在 FROM 的最左侧，ShardingSphere 将会以它作为整个绑定表的主表。 所有路由计算将会只使用主表的策略，那么 t_order_item 表的分片计算将会使用 t_order 的条件。故绑定表之间的分区键要完全相同。</p>
+<h2 id="广播表"><a class="markdownIt-Anchor" href="#广播表"></a> 广播表</h2>
+<p>指所有的分片数据源中都存在的表，表结构和表中的数据在每个数据库中均完全一致。适用于数据量不大且需要与海量数据的表进行关联查询的场景，例如：字典表。</p>
+<h2 id="分片键"><a class="markdownIt-Anchor" href="#分片键"></a> 分片键</h2>
+<p>用于分片的数据库字段，是将数据库（表）水平拆分的关键字段。例：将订单表中的订单主键的尾数取模分片，则订单主键为分片字段。 SQL 中如果无分片字段，将执行全路由，性能较差。 除了对单分片字段的支持，Apache ShardingSphere 也支持根据多个字段进行分片。</p>
+<h2 id="分片算法"><a class="markdownIt-Anchor" href="#分片算法"></a> 分片算法</h2>
+<p>通过分片算法将数据分片，支持通过 =、&gt;=、&lt;=、&gt;、&lt;、BETWEEN 和 IN 分片。 分片算法需要应用方开发者自行实现，可实现的灵活度非常高。</p>
+<p>目前提供4种分片算法。 由于分片算法和业务实现紧密相关，因此并未提供内置分片算法，而是通过分片策略将各种场景提炼出来，提供更高层级的抽象，并提供接口让应用开发者自行实现分片算法。</p>
+<ul>
+<li>
+<p>标准分片算法<br />
+对应 StandardShardingAlgorithm，用于处理使用单一键作为分片键的 =、IN、BETWEEN AND、&gt;、&lt;、&gt;=、&lt;=进行分片的场景。需要配合 StandardShardingStrategy 使用。</p>
+</li>
+<li>
+<p>复合分片算法<br />
+对应 ComplexKeysShardingAlgorithm，用于处理使用多键作为分片键进行分片的场景，包含多个分片键的逻辑较复杂，需要应用开发者自行处理其中的复杂度。需要配合 ComplexShardingStrategy 使用。</p>
+</li>
+<li>
+<p>Hint分片算法<br />
+对应 HintShardingAlgorithm，用于处理使用 Hint 行分片的场景。需要配合 HintShardingStrategy 使用。</p>
+</li>
+</ul>
+<h2 id="分片策略"><a class="markdownIt-Anchor" href="#分片策略"></a> 分片策略</h2>
+<p>包含分片键和分片算法，由于分片算法的独立性，将其独立抽离。真正可用于分片操作的是分片键 + 分片算法，也就是分片策略。目前提供 5 种分片策略。</p>
+<ul>
+<li>
+<p>标准分片策略<br />
+对应 StandardShardingStrategy。提供对 SQ L语句中的 =, &gt;, &lt;, &gt;=, &lt;=, IN 和 BETWEEN AND 的分片操作支持。 StandardShardingStrategy 只支持单分片键，提供 PreciseShardingAlgorithm 和 RangeShardingAlgorithm 两个分片算法。 PreciseShardingAlgorithm 是必选的，用于处理 = 和 IN 的分片。 RangeShardingAlgorithm 是可选的，用于处理 BETWEEN AND, &gt;, &lt;, &gt;=, &lt;=分片，如果不配置 RangeShardingAlgorithm，SQL 中的 BETWEEN AND 将按照全库路由处理。</p>
+</li>
+<li>
+<p>复合分片策略<br />
+对应 ComplexShardingStrategy。复合分片策略。提供对 SQL 语句中的 =, &gt;, &lt;, &gt;=, &lt;=, IN 和 BETWEEN AND 的分片操作支持。 ComplexShardingStrategy 支持多分片键，由于多分片键之间的关系复杂，因此并未进行过多的封装，而是直接将分片键值组合以及分片操作符透传至分片算法，完全由应用开发者实现，提供最大的灵活度。</p>
+</li>
+<li>
+<p>Hint分片策略<br />
+对应 HintShardingStrategy。通过 Hint 指定分片值而非从 SQL 中提取分片值的方式进行分片的策略。</p>
+</li>
+<li>
+<p>不分片策略<br />
+对应 NoneShardingStrategy。不分片的策略。</p>
+</li>
+</ul>
+<h2 id="sql-hint"><a class="markdownIt-Anchor" href="#sql-hint"></a> SQL Hint</h2>
+<p>对于分片字段非 SQL 决定，而由其他外置条件决定的场景，可使用 SQL Hint 灵活的注入分片字段。 例：内部系统，按照员工登录主键分库，而数据库中并无此字段。SQL Hint 支持通过 Java API 和 SQL 注释（待实现）两种方式使用。 详情请参见强制分片路由。</p>
+<h2 id="分布式主键"><a class="markdownIt-Anchor" href="#分布式主键"></a> 分布式主键</h2>
+<p>详见<a href="https://shardingsphere.apache.org/document/current/cn/features/sharding/concept/key-generator/" target="_blank" rel="noopener">分布式主键</a></p>
+<h1 id="shardingsphere-jdbc内核剖析"><a class="markdownIt-Anchor" href="#shardingsphere-jdbc内核剖析"></a> ShardingSphere-JDBC内核剖析</h1>
+<p>ShardingSphere-JDBC核心由 <code>SQL 解析 =&gt; SQL 路由 =&gt; SQL 改写 =&gt; SQL 执行 =&gt; 结果归并</code>的流程组成，如下图：<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/6.png"  alt="ShardingSphere-JDBC核心流程" /></p>
+<h2 id="sql解析"><a class="markdownIt-Anchor" href="#sql解析"></a> SQL解析</h2>
+<p>SQL解析过程分为词法解析和语法解析。 词法解析器用于将 SQL 拆解为不可再分的原子符号，称为 Token。并根据不同数据库方言所提供的字典，将其归类为关键字，表达式，字面量和操作符。 再使用语法解析器将 SQL 转换为抽象语法树。<br />
+例如，以下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">id</span>, <span class="keyword">name</span> <span class="keyword">FROM</span> t_user <span class="keyword">WHERE</span> <span class="keyword">status</span> = <span class="string">'ACTIVE'</span> <span class="keyword">AND</span> age &gt; <span class="number">18</span></span><br></pre></td></tr></table></figure>
+<p>解析之后的为抽象语法树见下图。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/7.png"  alt="sql解析" /><br />
+为了便于理解，抽象语法树中的关键字的 Token 用绿色表示，变量的 Token 用红色表示，灰色表示需要进一步拆分。</p>
+<p>最后，通过对抽象语法树的遍历去提炼分片所需的上下文，并标记有可能需要改写的位置。 供分片使用的解析上下文包含查询选择项（Select Items）、表信息（Table）、分片条件（Sharding Condition）、自增主键信息（Auto increment Primary Key）、排序信息（Order By）、分组信息（Group By）以及分页信息（Limit、Rownum、Top）。 SQL 的一次解析过程是不可逆的，一个个 Token 按 SQL 原本的顺序依次进行解析，性能很高。 考虑到各种数据库 SQL 方言的异同，在解析模块提供了各类数据库的 SQL 方言字典。</p>
+<h2 id="sql-路由"><a class="markdownIt-Anchor" href="#sql-路由"></a> SQL 路由</h2>
+<p>根据解析上下文匹配数据库和表的分片策略，并生成路由路径。 对于携带分片键的 SQL，根据分片键的不同可以划分为单片路由(分片键的操作符是等号)、多片路由(分片键的操作符是 IN)和范围路由(分片键的操作符是 BETWEEN)。 不携带分片键的 SQL 则采用广播路由。</p>
+<p>分片策略通常可以采用由数据库内置或由用户方配置。 数据库内置的方案较为简单，内置的分片策略大致可分为尾数取模、哈希、范围、标签、时间等。 由用户方配置的分片策略则更加灵活，可以根据使用方需求定制复合分片策略。 如果配合数据自动迁移来使用，可以做到无需用户关注分片策略，自动由数据库中间层分片和平衡数据即可，进而做到使分布式数据库具有的弹性伸缩的能力。 在 ShardingSphere 的线路规划中，弹性伸缩将于 4.x 开启。</p>
+<h3 id="分片路由"><a class="markdownIt-Anchor" href="#分片路由"></a> 分片路由</h3>
+<p>用于根据分片键进行路由的场景，又细分为直接路由、标准路由和笛卡尔积路由这 3 种类型。</p>
+<h4 id="直接路由"><a class="markdownIt-Anchor" href="#直接路由"></a> 直接路由</h4>
+<p>满足直接路由的条件相对苛刻，它需要通过 Hint（使用 HintAPI 直接指定路由至库表）方式分片，并且是只分库不分表的前提下，则可以避免 SQL 解析和之后的结果归并。 因此它的兼容性最好，可以执行包括子查询、自定义函数等复杂情况的任意 SQL。直接路由还可以用于分片键不在 SQL 中的场景。例如，设置用于数据库分片的键为 3，</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">hintManager.setDatabaseShardingValue(<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<p>假如路由算法为 value % 2，当一个逻辑库 t_order 对应 2 个真实库 t_order_0 和 t_order_1 时，路由后 SQL 将在 t_order_1 上执行。下方是使用 API 的代码样例：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">String sql = <span class="string">"SELECT * FROM t_order"</span>;</span><br><span class="line"><span class="keyword">try</span> (</span><br><span class="line">        HintManager hintManager = HintManager.getInstance();</span><br><span class="line">        Connection conn = dataSource.getConnection();</span><br><span class="line">        PreparedStatement pstmt = conn.prepareStatement(sql)) &#123;</span><br><span class="line">    hintManager.setDatabaseShardingValue(<span class="number">3</span>);</span><br><span class="line">    <span class="keyword">try</span> (ResultSet rs = pstmt.executeQuery()) &#123;</span><br><span class="line">        <span class="keyword">while</span> (rs.next()) &#123;</span><br><span class="line">            <span class="comment">//...</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="标准路由"><a class="markdownIt-Anchor" href="#标准路由"></a> 标准路由</h4>
+<p>标准路由是 ShardingSphere 最为推荐使用的分片方式，它的适用范围是不包含关联查询或仅包含绑定表之间关联查询的 SQL。 当分片运算符是等于号时，路由结果将落入单库（表），当分片运算符是 BETWEEN 或 IN 时，则路由结果不一定落入唯一的库（表），因此一条逻辑 SQL 最终可能被拆分为多条用于执行的真实 SQL。 举例说明，如果按照 order_id 的奇数和偶数进行数据分片，一个单表查询的 SQL 如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>那么路由的结果应为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>绑定表的关联查询与单表查询复杂度和性能相当。举例说明，如果一个包含绑定表的关联查询的 SQL 如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order o <span class="keyword">JOIN</span> t_order_item i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>那么路由的结果应为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>可以看到，SQL 拆分的数目与单表是一致的。</p>
+<h4 id="笛卡尔路由"><a class="markdownIt-Anchor" href="#笛卡尔路由"></a> 笛卡尔路由</h4>
+<p>笛卡尔路由是最复杂的情况，它无法根据绑定表的关系定位分片规则，因此非绑定表之间的关联查询需要拆解为笛卡尔积组合执行。 如果上个示例中的 SQL 并未配置绑定表关系，那么路由的结果应为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_0 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 o <span class="keyword">JOIN</span> t_order_item_1 i <span class="keyword">ON</span> o.order_id=i.order_id  <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>笛卡尔路由查询性能较低，需谨慎使用。</p>
+<h3 id="广播路由"><a class="markdownIt-Anchor" href="#广播路由"></a> 广播路由</h3>
+<p>对于不携带分片键的 SQL，则采取广播路由的方式。根据 SQL 类型又可以划分为全库表路由、全库路由、全实例路由、单播路由和阻断路由这 5 种类型。</p>
+<h4 id="全库表路由"><a class="markdownIt-Anchor" href="#全库表路由"></a> 全库表路由</h4>
+<p>全库表路由用于处理对数据库中与其逻辑表相关的所有真实表的操作，主要包括不带分片键的 DQL 和 DML，以及 DDL 等。例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> good_prority <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">10</span>);</span><br></pre></td></tr></table></figure>
+<p>则会遍历所有数据库中的所有表，逐一匹配逻辑表和真实表名，能够匹配得上则执行。路由后成为</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 <span class="keyword">WHERE</span> good_prority <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">10</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> good_prority <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">10</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_2 <span class="keyword">WHERE</span> good_prority <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">10</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_3 <span class="keyword">WHERE</span> good_prority <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">10</span>);</span><br></pre></td></tr></table></figure>
+<h4 id="全库路由"><a class="markdownIt-Anchor" href="#全库路由"></a> 全库路由</h4>
+<p>全库路由用于处理对数据库的操作，包括用于库设置的 SET 类型的数据库管理命令，以及 TCL 这样的事务控制语句。 在这种情况下，会根据逻辑库的名字遍历所有符合名字匹配的真实库，并在真实库中执行该命令，例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SET</span> autocommit=<span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>在 t_order 中执行，t_order 有 2 个真实库。则实际会在 t_order_0 和 t_order_1 上都执行这个命令。</p>
+<h4 id="全实例路由"><a class="markdownIt-Anchor" href="#全实例路由"></a> 全实例路由</h4>
+<p>全实例路由用于 DCL 操作，授权语句针对的是数据库的实例。无论一个实例中包含多少个 Schema，每个数据库的实例只执行一次。例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">USER</span> customer@<span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span> <span class="keyword">identified</span> <span class="keyword">BY</span> <span class="string">'123'</span>;</span><br></pre></td></tr></table></figure>
+<p>这个命令将在所有的真实数据库实例中执行，以确保 customer 用户可以访问每一个实例。</p>
+<h4 id="单播路由"><a class="markdownIt-Anchor" href="#单播路由"></a> 单播路由</h4>
+<p>单播路由用于获取某一真实表信息的场景，它仅需要从任意库中的任意真实表中获取数据即可。例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">DESCRIBE</span> t_order;</span><br></pre></td></tr></table></figure>
+<p>t_order 的两个真实表 t_order_0，t_order_1 的描述结构相同，所以这个命令在任意真实表上选择执行一次。</p>
+<h4 id="阻断路由"><a class="markdownIt-Anchor" href="#阻断路由"></a> 阻断路由</h4>
+<p>阻断路由用于屏蔽 SQL 对数据库的操作，例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">USE</span> order_db;</span><br></pre></td></tr></table></figure>
+<p>这个命令不会在真实数据库中执行，因为 ShardingSphere 采用的是逻辑 Schema 的方式，无需将切换数据库 Schema 的命令发送至数据库中。</p>
+<p>路由引擎的整体结构划分如下图。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/8.png"  alt="路由引擎" /></p>
+<h2 id="sql改写"><a class="markdownIt-Anchor" href="#sql改写"></a> sql改写</h2>
+<p>工程师面向逻辑库与逻辑表书写的 SQL，并不能够直接在真实的数据库中执行，SQL 改写用于将逻辑 SQL 改写为在真实数据库中可以正确执行的 SQL。 它包括正确性改写和优化改写两部分</p>
+<h3 id="正确性改写"><a class="markdownIt-Anchor" href="#正确性改写"></a> 正确性改写</h3>
+<p>在包含分表的场景中，需要将分表配置中的逻辑表名称改写为路由之后所获取的真实表名称。仅分库则不需要表名称的改写。除此之外，还包括补列和分页信息修正等内容。</p>
+<h3 id="标识符改写"><a class="markdownIt-Anchor" href="#标识符改写"></a> 标识符改写</h3>
+<p>需要改写的标识符包括表名称、索引名称以及 Schema 名称。</p>
+<p>表名称改写是指将找到逻辑表在原始 SQL 中的位置，并将其改写为真实表的过程。表名称改写是一个典型的需要对 SQL 进行解析的场景。 从一个最简单的例子开始，若逻辑 SQL 为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> order_id=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>假设该 SQL 配置分片键 order_id，并且 order_id=1 的情况，将路由至分片表 1。那么改写之后的 SQL 应该为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>在这种最简单的 SQL 场景中，是否将 SQL 解析为抽象语法树似乎无关紧要，只要通过字符串查找和替换就可以达到 SQL 改写的效果。 但是下面的场景，就无法仅仅通过字符串的查找替换来正确的改写 SQL 了：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>正确改写的 SQL 应该是：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>而非：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order_1 xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>由于表名之外可能含有表名称的类似字符，因此不能通过简单的字符串替换的方式去改写 SQL。</p>
+<p>下面再来看一个更加复杂的 SQL 改写场景：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> t_order.order_id <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> t_order.order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>上面的 SQL 将表名作为字段的标识符，因此在 SQL 改写时需要一并修改：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> t_order_1.order_id <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> t_order_1.order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>而如果 SQL 中定义了表的别名，则无需连同别名一起修改，即使别名与表名相同亦是如此。例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> t_order.order_id <span class="keyword">FROM</span> t_order <span class="keyword">AS</span> t_order <span class="keyword">WHERE</span> t_order.order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>SQL 改写则仅需要改写表名称就可以了：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> t_order.order_id <span class="keyword">FROM</span> t_order_1 <span class="keyword">AS</span> t_order <span class="keyword">WHERE</span> t_order.order_id=<span class="number">1</span> <span class="keyword">AND</span> remarks=<span class="string">' t_order xxx'</span>;</span><br></pre></td></tr></table></figure>
+<p>索引名称是另一个有可能改写的标识符。 在某些数据库中（如 MySQL、SQLServer），索引是以表为维度创建的，在不同的表中的索引是可以重名的； 而在另外的一些数据库中（如 PostgreSQL、Oracle），索引是以数据库为维度创建的，即使是作用在不同表上的索引，它们也要求其名称的唯一性。</p>
+<p>在 ShardingSphere 中，管理 Schema 的方式与管理表如出一辙，它采用逻辑 Schema 去管理一组数据源。 因此，ShardingSphere 需要将用户在 SQL 中书写的逻辑 Schema 替换为真实的数据库 Schema。</p>
+<p>ShardingSphere 目前还不支持在 DQL 和 DML 语句中使用 Schema。 它目前仅支持在数据库管理语句中使用 Schema，例如：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SHOW</span> <span class="keyword">COLUMNS</span> <span class="keyword">FROM</span> t_order <span class="keyword">FROM</span> order_ds;</span><br></pre></td></tr></table></figure>
+<p>Schema 的改写指的是将逻辑 Schema 采用单播路由的方式，改写为随机查找到的一个正确的真实 Schema。</p>
+<h3 id="补列"><a class="markdownIt-Anchor" href="#补列"></a> 补列</h3>
+<p>需要在查询语句中补列通常由两种情况导致。 第一种情况是 ShardingSphere 需要在结果归并时获取相应数据，但该数据并未能通过查询的 SQL 返回。 这种情况主要是针对 GROUP BY 和 ORDER BY。结果归并时，需要根据 GROUP BY 和 ORDER BY 的字段项进行分组和排序，但如果原始 SQL 的选择项中若并未包含分组项或排序项，则需要对原始 SQL 进行改写。 先看一下原始 SQL 中带有结果归并所需信息的场景：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id, user_id <span class="keyword">FROM</span> t_order <span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id;</span><br></pre></td></tr></table></figure>
+<p>由于使用 user_id 进行排序，在结果归并中需要能够获取到 user_id 的数据，而上面的 SQL 是能够获取到 user_id 数据的，因此无需补列。</p>
+<p>如果选择项中不包含结果归并时所需的列，则需要进行补列，如以下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id <span class="keyword">FROM</span> t_order <span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id;</span><br></pre></td></tr></table></figure>
+<p>由于原始 SQL 中并不包含需要在结果归并中需要获取的 user_id，因此需要对 SQL 进行补列改写。补列之后的 SQL 是：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> order_id, user_id <span class="keyword">AS</span> ORDER_BY_DERIVED_0 <span class="keyword">FROM</span> t_order <span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id;</span><br></pre></td></tr></table></figure>
+<p>值得一提的是，补列只会补充缺失的列，不会全部补充，而且，在 SELECT 语句中包含 * 的 SQL，也会根据表的元数据信息选择性补列。下面是一个较为复杂的 SQL 补列场景：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> o.* <span class="keyword">FROM</span> t_order o, t_order_item i <span class="keyword">WHERE</span> o.order_id=i.order_id <span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id, order_item_id;</span><br></pre></td></tr></table></figure>
+<p>我们假设只有 t_order_item 表中包含 order_item_id 列，那么根据表的元数据信息可知，在结果归并时，排序项中的 user_id 是存在于 t_order 表中的，无需补列；order_item_id 并不在 t_order 中，因此需要补列。 补列之后的 SQL 是：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> o.*, order_item_id <span class="keyword">AS</span> ORDER_BY_DERIVED_0 <span class="keyword">FROM</span> t_order o, t_order_item i <span class="keyword">WHERE</span> o.order_id=i.order_id <span class="keyword">ORDER</span> <span class="keyword">BY</span> user_id, order_item_id;</span><br></pre></td></tr></table></figure>
+<p>补列的另一种情况是使用 AVG 聚合函数。在分布式的场景中，使用 avg1 + avg2 + avg3 / 3 计算平均值并不正确，需要改写为 (sum1 + sum2 + sum3) / (count1 + count2 + count3)。 这就需要将包含 AVG 的 SQL 改写为 SUM 和 COUNT，并在结果归并时重新计算平均值。例如以下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">AVG</span>(price) <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> user_id=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>需要改写为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">COUNT</span>(price) <span class="keyword">AS</span> AVG_DERIVED_COUNT_0, <span class="keyword">SUM</span>(price) <span class="keyword">AS</span> AVG_DERIVED_SUM_0 <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> user_id=<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>然后才能够通过结果归并正确的计算平均值。</p>
+<p>最后一种补列是在执行 INSERT 的 SQL 语句时，如果使用数据库自增主键，是无需写入主键字段的。 但数据库的自增主键是无法满足分布式场景下的主键唯一的，因此 ShardingSphere 提供了分布式自增主键的生成策略，并且可以通过补列，让使用方无需改动现有代码，即可将分布式自增主键透明的替换数据库现有的自增主键。 分布式自增主键的生成策略将在下文中详述，这里只阐述与 SQL 改写相关的内容。 举例说明，假设表 t_order 的主键是 order_id，原始的 SQL 为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order (<span class="string">`field1`</span>, <span class="string">`field2`</span>) <span class="keyword">VALUES</span> (<span class="number">10</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>可以看到，上述 SQL 中并未包含自增主键，是需要数据库自行填充的。ShardingSphere 配置自增主键后，SQL 将改写为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order (<span class="string">`field1`</span>, <span class="string">`field2`</span>, order_id) <span class="keyword">VALUES</span> (<span class="number">10</span>, <span class="number">1</span>, xxxxx);</span><br></pre></td></tr></table></figure>
+<p>改写后的 SQL 将在 INSERT FIELD 和 INSERT VALUE 的最后部分增加主键列名称以及自动生成的自增主键值。上述 SQL 中的 xxxxx 表示自动生成的自增主键值。</p>
+<p>如果 INSERT 的 SQL 中并未包含表的列名称，ShardingSphere 也可以根据判断参数个数以及表元信息中的列数量对比，并自动生成自增主键。例如，原始的 SQL 为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order <span class="keyword">VALUES</span> (<span class="number">10</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>改写的 SQL 将只在主键所在的列顺序处增加自增主键即可：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order <span class="keyword">VALUES</span> (xxxxx, <span class="number">10</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>自增主键补列时，如果使用占位符的方式书写 SQL，则只需要改写参数列表即可，无需改写 SQL 本身。</p>
+<h3 id="分页修正"><a class="markdownIt-Anchor" href="#分页修正"></a> 分页修正</h3>
+<p>从多个数据库获取分页数据与单数据库的场景是不同的。 假设每 10 条数据为一页，取第 2 页数据。在分片环境下获取 LIMIT 10, 10，归并之后再根据排序条件取出前 10 条数据是不正确的。 举例说明，若 SQL 为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> score <span class="keyword">FROM</span> t_score <span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">DESC</span> <span class="keyword">LIMIT</span> <span class="number">1</span>, <span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+<p>下图展示了不进行 SQL 的改写的分页执行结果。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/9.png"  alt="sql分页改写前" /><br />
+通过图中所示，想要取得两个表中共同的按照分数排序的第 2 条和第 3 条数据，应该是 95 和 90。 由于执行的 SQL 只能从每个表中获取第 2 条和第 3 条数据，即从 t_score_0 表中获取的是 90 和 80；从 t_score_0 表中获取的是 85 和 75。 因此进行结果归并时，只能从获取的 90，80，85 和 75 之中进行归并，那么结果归并无论怎么实现，都不可能获得正确的结果。</p>
+<p>正确的做法是将分页条件改写为 LIMIT 0, 3，取出所有前两页数据，再结合排序条件计算出正确的数据。 下图展示了进行 SQL 改写之后的分页执行结果。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/10.png"  alt="sql分页改写后" /><br />
+越获取偏移量位置靠后数据，使用 LIMIT 分页方式的效率就越低。 有很多方法可以避免使用 LIMIT 进行分页。比如构建行记录数量与行偏移量的二级索引，或使用上次分页数据结尾 ID 作为下次查询条件的分页方式等。</p>
+<p>分页信息修正时，如果使用占位符的方式书写 SQL，则只需要改写参数列表即可，无需改写 SQL 本身。</p>
+<h3 id="批量拆分"><a class="markdownIt-Anchor" href="#批量拆分"></a> 批量拆分</h3>
+<p>在使用批量插入的 SQL 时，如果插入的数据是跨分片的，那么需要对 SQL 进行改写来防止将多余的数据写入到数据库中。 插入操作与查询操作的不同之处在于，查询语句中即使用了不存在于当前分片的分片键，也不会对数据产生影响；而插入操作则必须将多余的分片键删除。 举例说明，如下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order (order_id, xxx) <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="string">'xxx'</span>), (<span class="number">2</span>, <span class="string">'xxx'</span>), (<span class="number">3</span>, <span class="string">'xxx'</span>);</span><br></pre></td></tr></table></figure>
+<p>假设数据库仍然是按照 order_id 的奇偶值分为两片的，仅将这条 SQL 中的表名进行修改，然后发送至数据库完成 SQL 的执行 ，则两个分片都会写入相同的记录。 虽然只有符合分片查询条件的数据才能够被查询语句取出，但存在冗余数据的实现方案并不合理。因此需要将 SQL 改写为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order_0 (order_id, xxx) <span class="keyword">VALUES</span> (<span class="number">2</span>, <span class="string">'xxx'</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t_order_1 (order_id, xxx) <span class="keyword">VALUES</span> (<span class="number">1</span>, <span class="string">'xxx'</span>), (<span class="number">3</span>, <span class="string">'xxx'</span>);</span><br></pre></td></tr></table></figure>
+<p>使用 IN 的查询与批量插入的情况相似，不过 IN 操作并不会导致数据查询结果错误。通过对 IN 查询的改写，可以进一步的提升查询性能。如以下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<p>改写为：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">2</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<p>可以进一步的提升查询性能。ShardingSphere 暂时还未实现此改写策略，目前的改写结果是：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_0 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> t_order_1 <span class="keyword">WHERE</span> order_id <span class="keyword">IN</span> (<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<p>虽然 SQL 的执行结果是正确的，但并未达到最优的查询效率。</p>
+<h3 id="优化改写"><a class="markdownIt-Anchor" href="#优化改写"></a> 优化改写</h3>
+<p>优化改写的目的是在不影响查询正确性的情况下，对性能进行提升的有效手段。它分为单节点优化和流式归并优化。</p>
+<h4 id="单节点优化"><a class="markdownIt-Anchor" href="#单节点优化"></a> 单节点优化</h4>
+<p>路由至单节点的 SQL，则无需优化改写。 当获得一次查询的路由结果后，如果是路由至唯一的数据节点，则无需涉及到结果归并。因此补列和分页信息等改写都没有必要进行。 尤其是分页信息的改写，无需将数据从第 1 条开始取，大量的降低了对数据库的压力，并且节省了网络带宽的无谓消耗。</p>
+<h4 id="流式归并优化"><a class="markdownIt-Anchor" href="#流式归并优化"></a> 流式归并优化</h4>
+<p>它仅为包含 GROUP BY 的 SQL 增加 ORDER BY 以及和分组项相同的排序项和排序顺序，用于将内存归并转化为流式归并。 在结果归并的部分中，将对流式归并和内存归并进行详细说明。</p>
+<p>改写引擎的整体结构划分如下图所示。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/11.png"  alt="sql改写引擎" /></p>
+<h2 id="sql执行"><a class="markdownIt-Anchor" href="#sql执行"></a> sql执行</h2>
+<p>ShardingSphere 采用一套自动化的执行引擎，负责将路由和改写完成之后的真实 SQL 安全且高效发送到底层数据源执行。 它不是简单地将 SQL 通过 JDBC 直接发送至数据源执行；也并非直接将执行请求放入线程池去并发执行。它更关注平衡数据源连接创建以及内存占用所产生的消耗，以及最大限度地合理利用并发等问题。 执行引擎的目标是自动化的平衡资源控制与执行效率。</p>
+<h3 id="连接模式"><a class="markdownIt-Anchor" href="#连接模式"></a> 连接模式</h3>
+<p>从资源控制的角度看，业务方访问数据库的连接数量应当有所限制。 它能够有效地防止某一业务操作过多的占用资源，从而将数据库连接的资源耗尽，以致于影响其他业务的正常访问。 特别是在一个数据库实例中存在较多分表的情况下，一条不包含分片键的逻辑 SQL 将产生落在同库不同表的大量真实 SQL ，如果每条真实SQL都占用一个独立的连接，那么一次查询无疑将会占用过多的资源。</p>
+<p>从执行效率的角度看，为每个分片查询维持一个独立的数据库连接，可以更加有效的利用多线程来提升执行效率。 为每个数据库连接开启独立的线程，可以将 I/O 所产生的消耗并行处理。为每个分片维持一个独立的数据库连接，还能够避免过早的将查询结果数据加载至内存。 独立的数据库连接，能够持有查询结果集游标位置的引用，在需要获取相应数据时移动游标即可。</p>
+<p>以结果集游标下移进行结果归并的方式，称之为流式归并，它无需将结果数据全数加载至内存，可以有效的节省内存资源，进而减少垃圾回收的频次。 当无法保证每个分片查询持有一个独立数据库连接时，则需要在复用该数据库连接获取下一张分表的查询结果集之前，将当前的查询结果集全数加载至内存。 因此，即使可以采用流式归并，在此场景下也将退化为内存归并。</p>
+<p>一方面是对数据库连接资源的控制保护，一方面是采用更优的归并模式达到对中间件内存资源的节省，如何处理好两者之间的关系，是 ShardingSphere 执行引擎需要解决的问题。 具体来说，如果一条 SQL 在经过 ShardingSphere 的分片后，需要操作某数据库实例下的 200 张表。 那么，是选择创建 200 个连接并行执行，还是选择创建一个连接串行执行呢？效率与资源控制又应该如何抉择呢？</p>
+<p>针对上述场景，ShardingSphere 提供了一种解决思路。 它提出了连接模式（Connection Mode）的概念，将其划分为内存限制模式（MEMORY_STRICTLY）和连接限制模式（CONNECTION_STRICTLY）这两种类型。</p>
+<h4 id="内存限制模式"><a class="markdownIt-Anchor" href="#内存限制模式"></a> 内存限制模式</h4>
+<p>使用此模式的前提是，ShardingSphere 对一次操作所耗费的数据库连接数量不做限制。 如果实际执行的 SQL 需要对某数据库实例中的 200 张表做操作，则对每张表创建一个新的数据库连接，并通过多线程的方式并发处理，以达成执行效率最大化。 并且在 SQL 满足条件情况下，优先选择流式归并，以防止出现内存溢出或避免频繁垃圾回收情况。</p>
+<h4 id="连接限制模式"><a class="markdownIt-Anchor" href="#连接限制模式"></a> 连接限制模式</h4>
+<p>使用此模式的前提是，ShardingSphere 严格控制对一次操作所耗费的数据库连接数量。 如果实际执行的 SQL 需要对某数据库实例中的 200 张表做操作，那么只会创建唯一的数据库连接，并对其 200 张表串行处理。 如果一次操作中的分片散落在不同的数据库，仍然采用多线程处理对不同库的操作，但每个库的每次操作仍然只创建一个唯一的数据库连接。 这样即可以防止对一次请求对数据库连接占用过多所带来的问题。该模式始终选择内存归并。</p>
+<p>内存限制模式适用于 OLAP 操作，可以通过放宽对数据库连接的限制提升系统吞吐量； 连接限制模式适用于 OLTP 操作，OLTP 通常带有分片键，会路由到单一的分片，因此严格控制数据库连接，以保证在线系统数据库资源能够被更多的应用所使用，是明智的选择。</p>
+<h3 id="自动化执行引擎"><a class="markdownIt-Anchor" href="#自动化执行引擎"></a> 自动化执行引擎</h3>
+<p>ShardingSphere 最初将使用何种模式的决定权交由用户配置，让开发者依据自己业务的实际场景需求选择使用内存限制模式或连接限制模式。</p>
+<p>这种解决方案将两难的选择的决定权交由用户，使得用户必须要了解这两种模式的利弊，并依据业务场景需求进行选择。 这无疑增加了用户对 ShardingSphere 的学习和使用的成本，并非最优方案。</p>
+<p>这种一分为二的处理方案，将两种模式的切换交由静态的初始化配置，是缺乏灵活应对能力的。在实际的使用场景中，面对不同 SQL 以及占位符参数，每次的路由结果是不同的。 这就意味着某些操作可能需要使用内存归并，而某些操作则可能选择流式归并更优，具体采用哪种方式不应该由用户在 ShardingSphere 启动之前配置好，而是应该根据 SQL 和占位符参数的场景，来动态的决定连接模式。</p>
+<p>为了降低用户的使用成本以及连接模式动态化这两个问题，ShardingSphere 提炼出自动化执行引擎的思路，在其内部消化了连接模式概念。 用户无需了解所谓的内存限制模式和连接限制模式是什么，而是交由执行引擎根据当前场景自动选择最优的执行方案。</p>
+<p>自动化执行引擎将连接模式的选择粒度细化至每一次 SQL 的操作。 针对每次 SQL 请求，自动化执行引擎都将根据其路由结果，进行实时的演算和权衡，并自主地采用恰当的连接模式执行，以达到资源控制和效率的最优平衡。 针对自动化的执行引擎，用户只需配置 maxConnectionSizePerQuery 即可，该参数表示一次查询时每个数据库所允许使用的最大连接数。</p>
+<p>执行引擎分为准备和执行两个阶段。</p>
+<h4 id="准备阶段"><a class="markdownIt-Anchor" href="#准备阶段"></a> 准备阶段</h4>
+<p>顾名思义，此阶段用于准备执行的数据。它分为结果集分组和执行单元创建两个步骤。</p>
+<p>结果集分组是实现内化连接模式概念的关键。执行引擎根据 maxConnectionSizePerQuery 配置项，结合当前路由结果，选择恰当的连接模式。 具体步骤如下：</p>
+<p>将 SQL 的路由结果按照数据源的名称进行分组。</p>
+<p>通过下图的公式，可以获得每个数据库实例在 maxConnectionSizePerQuery 的允许范围内，每个连接需要执行的 SQL 路由结果组，并计算出本次请求的最优连接模式。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/12.png"  alt="连接模式" /><br />
+在 maxConnectionSizePerQuery 允许的范围内，当一个连接需要执行的请求数量大于 1 时，意味着当前的数据库连接无法持有相应的数据结果集，则必须采用内存归并； 反之，当一个连接需要执行的请求数量等于 1 时，意味着当前的数据库连接可以持有相应的数据结果集，则可以采用流式归并。</p>
+<p>每一次的连接模式的选择，是针对每一个物理数据库的。也就是说，在同一次查询中，如果路由至一个以上的数据库，每个数据库的连接模式不一定一样，它们可能是混合存在的形态。</p>
+<p>通过上一步骤获得的路由分组结果创建执行的单元。 当数据源使用数据库连接池等控制数据库连接数量的技术时，在获取数据库连接时，如果不妥善处理并发，则有一定几率发生死锁。 在多个请求相互等待对方释放数据库连接资源时，将会产生饥饿等待，造成交叉的死锁问题。</p>
+<p>举例说明，假设一次查询需要在某一数据源上获取两个数据库连接，并路由至同一个数据库的两个分表查询。 则有可能出现查询 A 已获取到该数据源的 1 个数据库连接，并等待获取另一个数据库连接；而查询 B 也已经在该数据源上获取到的一个数据库连接，并同样等待另一个数据库连接的获取。 如果数据库连接池的允许最大连接数是 2，那么这 2 个查询请求将永久的等待下去。下图描绘了死锁的情况。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/13.png"  alt="死锁" /><br />
+ShardingSphere 为了避免死锁的出现，在获取数据库连接时进行了同步处理。 它在创建执行单元时，以原子性的方式一次性获取本次 SQL 请求所需的全部数据库连接，杜绝了每次查询请求获取到部分资源的可能。 由于对数据库的操作非常频繁，每次获取数据库连接时时都进行锁定，会降低 ShardingSphere 的并发。因此，ShardingSphere 在这里进行了 2 点优化：</p>
+<ol>
+<li>
+<p>避免锁定一次性只需要获取1个数据库连接的操作。因为每次仅需要获取 1 个连接，则不会发生两个请求相互等待的场景，无需锁定。 对于大部分 OLTP 的操作，都是使用分片键路由至唯一的数据节点，这会使得系统变为完全无锁的状态，进一步提升了并发效率。 除了路由至单分片的情况，读写分离也在此范畴之内。</p>
+</li>
+<li>
+<p>仅针对内存限制模式时才进行资源锁定。在使用连接限制模式时，所有的查询结果集将在装载至内存之后释放掉数据库连接资源，因此不会产生死锁等待的问题。</p>
+</li>
+</ol>
+<h4 id="执行阶段"><a class="markdownIt-Anchor" href="#执行阶段"></a> 执行阶段</h4>
+<p>该阶段用于真正的执行 SQL，它分为分组执行和归并结果集生成两个步骤。</p>
+<p>分组执行将准备执行阶段生成的执行单元分组下发至底层并发执行引擎，并针对执行过程中的每个关键步骤发送事件。 如：执行开始事件、执行成功事件以及执行失败事件。执行引擎仅关注事件的发送，它并不关心事件的订阅者。 ShardingSphere 的其他模块，如：分布式事务、调用链路追踪等，会订阅感兴趣的事件，并进行相应的处理。</p>
+<p>ShardingSphere 通过在执行准备阶段的获取的连接模式，生成内存归并结果集或流式归并结果集，并将其传递至结果归并引擎，以进行下一步的工作。</p>
+<p>执行引擎的整体结构划分如下图所示。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/14.png"  alt="执行引擎" /></p>
+<h2 id="结果归并"><a class="markdownIt-Anchor" href="#结果归并"></a> 结果归并</h2>
+<p>将从各个数据节点获取的多数据结果集，组合成为一个结果集并正确的返回至请求客户端，称为结果归并。</p>
+<p>ShardingSphere 支持的结果归并从功能上分为遍历、排序、分组、分页和聚合 5 种类型，它们是组合而非互斥的关系。 从结构划分，可分为流式归并、内存归并和装饰者归并。流式归并和内存归并是互斥的，装饰者归并可以在流式归并和内存归并之上做进一步的处理。</p>
+<p>由于从数据库中返回的结果集是逐条返回的，并不需要将所有的数据一次性加载至内存中，因此，在进行结果归并时，沿用数据库返回结果集的方式进行归并，能够极大减少内存的消耗，是归并方式的优先选择。</p>
+<p>流式归并是指每一次从结果集中获取到的数据，都能够通过逐条获取的方式返回正确的单条数据，它与数据库原生的返回结果集的方式最为契合。遍历、排序以及流式分组都属于流式归并的一种。</p>
+<p>内存归并则是需要将结果集的所有数据都遍历并存储在内存中，再通过统一的分组、排序以及聚合等计算之后，再将其封装成为逐条访问的数据结果集返回。</p>
+<p>装饰者归并是对所有的结果集归并进行统一的功能增强，目前装饰者归并有分页归并和聚合归并这 2 种类型。</p>
+<h3 id="遍历归并"><a class="markdownIt-Anchor" href="#遍历归并"></a> 遍历归并</h3>
+<p>它是最为简单的归并方式。 只需将多个数据结果集合并为一个单向链表即可。在遍历完成链表中当前数据结果集之后，将链表元素后移一位，继续遍历下一个数据结果集即可。</p>
+<h3 id="排序归并"><a class="markdownIt-Anchor" href="#排序归并"></a> 排序归并</h3>
+<p>由于在 SQL 中存在 ORDER BY 语句，因此每个数据结果集自身是有序的，因此只需要将数据结果集当前游标指向的数据值进行排序即可。 这相当于对多个有序的数组进行排序，归并排序是最适合此场景的排序算法。</p>
+<p>ShardingSphere 在对排序的查询进行归并时，将每个结果集的当前数据值进行比较（通过实现 Java 的 Comparable 接口完成），并将其放入优先级队列。 每次获取下一条数据时，只需将队列顶端结果集的游标下移，并根据新游标重新进入优先级排序队列找到自己的位置即可。</p>
+<p>通过一个例子来说明 ShardingSphere 的排序归并，下图是一个通过分数进行排序的示例图。 图中展示了 3 张表返回的数据结果集，每个数据结果集已经根据分数排序完毕，但是 3 个数据结果集之间是无序的。 将 3 个数据结果集的当前游标指向的数据值进行排序，并放入优先级队列，t_score_0 的第一个数据值最大，t_score_2 的第一个数据值次之，t_score_1 的第一个数据值最小，因此优先级队列根据 t_score_0，t_score_2 和 t_score_1 的方式排序队列。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/15.png"  alt="排序归并例子" /><br />
+下图则展现了进行 next 调用的时候，排序归并是如何进行的。 通过图中我们可以看到，当进行第一次 next 调用时，排在队列首位的 t_score_0 将会被弹出队列，并且将当前游标指向的数据值（也就是 100）返回至查询客户端，并且将游标下移一位之后，重新放入优先级队列。 而优先级队列也会根据 t_score_0 的当前数据结果集指向游标的数据值（这里是 90）进行排序，根据当前数值，t_score_0 排列在队列的最后一位。 之前队列中排名第二的 t_score_2 的数据结果集则自动排在了队列首位。</p>
+<p>在进行第二次 next 时，只需要将目前排列在队列首位的 t_score_2 弹出队列，并且将其数据结果集游标指向的值返回至客户端，并下移游标，继续加入队列排队，以此类推。 当一个结果集中已经没有数据了，则无需再次加入队列。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/16.png"  alt="排序归并" /><br />
+可以看到，对于每个数据结果集中的数据有序，而多数据结果集整体无序的情况下，ShardingSphere 无需将所有的数据都加载至内存即可排序。 它使用的是流式归并的方式，每次 next 仅获取唯一正确的一条数据，极大的节省了内存的消耗。</p>
+<p>从另一个角度来说，ShardingSphere 的排序归并，是在维护数据结果集的纵轴和横轴这两个维度的有序性。 纵轴是指每个数据结果集本身，它是天然有序的，它通过包含 ORDER BY 的 SQL 所获取。 横轴是指每个数据结果集当前游标所指向的值，它需要通过优先级队列来维护其正确顺序。 每一次数据结果集当前游标的下移，都需要将该数据结果集重新放入优先级队列排序，而只有排列在队列首位的数据结果集才可能发生游标下移的操作。</p>
+<h3 id="分组归并"><a class="markdownIt-Anchor" href="#分组归并"></a> 分组归并</h3>
+<p>分组归并的情况最为复杂，它分为流式分组归并和内存分组归并。 流式分组归并要求 SQL 的排序项与分组项的字段以及排序类型（ASC 或 DESC）必须保持一致，否则只能通过内存归并才能保证其数据的正确性。</p>
+<p>举例说明，假设根据科目分片，表结构中包含考生的姓名（为了简单起见，不考虑重名的情况）和分数。通过 SQL 获取每位考生的总分，可通过如下 SQL：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span>, <span class="keyword">SUM</span>(score) <span class="keyword">FROM</span> t_score <span class="keyword">GROUP</span> <span class="keyword">BY</span> <span class="keyword">name</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span>;</span><br></pre></td></tr></table></figure>
+<p>在分组项与排序项完全一致的情况下，取得的数据是连续的，分组所需的数据全数存在于各个数据结果集的当前游标所指向的数据值，因此可以采用流式归并。如下图所示。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/17.png"  alt="分组归并1" /><br />
+进行归并时，逻辑与排序归并类似。 下图展现了进行 next 调用的时候，流式分组归并是如何进行的。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/18.png"  alt="分组归并2" /><br />
+通过图中我们可以看到，当进行第一次 next 调用时，排在队列首位的 t_score_java 将会被弹出队列，并且将分组值同为 “Jetty” 的其他结果集中的数据一同弹出队列。 在获取了所有的姓名为 “Jetty” 的同学的分数之后，进行累加操作，那么，在第一次 next 调用结束后，取出的结果集是 “Jetty” 的分数总和。 与此同时，所有的数据结果集中的游标都将下移至数据值 “Jetty” 的下一个不同的数据值，并且根据数据结果集当前游标指向的值进行重排序。 因此，包含名字顺着第二位的 “John” 的相关数据结果集则排在的队列的前列。</p>
+<p>流式分组归并与排序归并的区别仅仅在于两点：</p>
+<ol>
+<li>它会一次性的将多个数据结果集中的分组项相同的数据全数取出。</li>
+<li>它需要根据聚合函数的类型进行聚合计算。<br />
+对于分组项与排序项不一致的情况，由于需要获取分组的相关的数据值并非连续的，因此无法使用流式归并，需要将所有的结果集数据加载至内存中进行分组和聚合。 例如，若通过以下 SQL 获取每位考生的总分并按照分数从高至低排序：</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="keyword">name</span>, <span class="keyword">SUM</span>(score) <span class="keyword">FROM</span> t_score <span class="keyword">GROUP</span> <span class="keyword">BY</span> <span class="keyword">name</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> score <span class="keyword">DESC</span>;</span><br></pre></td></tr></table></figure>
+<p>那么各个数据结果集中取出的数据与排序归并那张图的上半部分的表结构的原始数据一致，是无法进行流式归并的。</p>
+<p>当 SQL 中只包含分组语句时，根据不同数据库的实现，其排序的顺序不一定与分组顺序一致。 但由于排序语句的缺失，则表示此 SQL 并不在意排序顺序。 因此，ShardingSphere 通过 SQL 优化的改写，自动增加与分组项一致的排序项，使其能够从消耗内存的内存分组归并方式转化为流式分组归并方案。</p>
+<h3 id="聚合归并"><a class="markdownIt-Anchor" href="#聚合归并"></a> 聚合归并</h3>
+<p>无论是流式分组归并还是内存分组归并，对聚合函数的处理都是一致的。 除了分组的 SQL 之外，不进行分组的 SQL 也可以使用聚合函数。 因此，聚合归并是在之前介绍的归并类的之上追加的归并能力，即装饰者模式。聚合函数可以归类为比较、累加和求平均值这 3 种类型。</p>
+<p>比较类型的聚合函数是指 MAX 和 MIN。它们需要对每一个同组的结果集数据进行比较，并且直接返回其最大或最小值即可。</p>
+<p>累加类型的聚合函数是指 SUM 和 COUNT。它们需要将每一个同组的结果集数据进行累加。</p>
+<p>求平均值的聚合函数只有 AVG。它必须通过 SQL 改写的 SUM 和 COUNT 进行计算，相关内容已在 SQL 改写的内容中涵盖，不再赘述。</p>
+<h3 id="分页归并"><a class="markdownIt-Anchor" href="#分页归并"></a> 分页归并</h3>
+<p>上文所述的所有归并类型都可能进行分页。 分页也是追加在其他归并类型之上的装饰器，ShardingSphere 通过装饰者模式来增加对数据结果集进行分页的能力。 分页归并负责将无需获取的数据过滤掉。</p>
+<p>ShardingSphere 的分页功能比较容易让使用者误解，用户通常认为分页归并会占用大量内存。 在分布式的场景中，将 LIMIT 10000000, 10 改写为 LIMIT 0, 10000010，才能保证其数据的正确性。 用户非常容易产生 ShardingSphere 会将大量无意义的数据加载至内存中，造成内存溢出风险的错觉。 其实，通过流式归并的原理可知，会将数据全部加载到内存中的只有内存分组归并这一种情况。 而通常来说，进行 OLAP 的分组 SQL，不会产生大量的结果数据，它更多的用于大量的计算，以及少量结果产出的场景。 除了内存分组归并这种情况之外，其他情况都通过流式归并获取数据结果集，因此 ShardingSphere 会通过结果集的 next 方法将无需取出的数据全部跳过，并不会将其存入内存。</p>
+<p>但同时需要注意的是，由于排序的需要，大量的数据仍然需要传输到 ShardingSphere 的内存空间。 因此，采用 LIMIT 这种方式分页，并非最佳实践。 由于 LIMIT 并不能通过索引查询数据，因此如果可以保证 ID 的连续性，通过 ID 进行分页是比较好的解决方案，例如：</p>
+<p>SELECT * FROM t_order WHERE id &gt; 100000 AND id &lt;= 100010 ORDER BY id;<br />
+或通过记录上次查询结果的最后一条记录的 ID 进行下一页的查询，例如：</p>
+<p>SELECT * FROM t_order WHERE id &gt; 10000000 LIMIT 10;<br />
+归并引擎的整体结构划分如下图。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/19.png"  alt="归并引擎" /></p>
+<h1 id="使用示例"><a class="markdownIt-Anchor" href="#使用示例"></a> 使用示例</h1>
+<h2 id="引入maven依赖"><a class="markdownIt-Anchor" href="#引入maven依赖"></a> 引入Maven依赖</h2>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="comment">&lt;!-- for spring boot --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>sharding-jdbc-spring-boot-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;sharding-sphere.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- for spring namespace --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.shardingsphere<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>sharding-jdbc-spring-namespace<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;sharding-sphere.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="基于spring-boot的规则配置"><a class="markdownIt-Anchor" href="#基于spring-boot的规则配置"></a> 基于Spring boot的规则配置</h2>
+<figure class="highlight properties"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 这里要注册所有的数据源</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.names</span>=<span class="string">ds0,ds1</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 这是数据源0的配置</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds0.type</span>=<span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds0.jdbc-url</span>=<span class="string">jdbc:mysql://localhost:3306/test?serverTimezone=GMT%2B8</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds0.driver-class-name</span>=<span class="string">com.mysql.jdbc.Driver</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds0.username</span>=<span class="string">root</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds0.password</span>=<span class="string"></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 这是数据源1的配置</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds1.type</span>=<span class="string">com.zaxxer.hikari.HikariDataSource</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds1.jdbc-url</span>=<span class="string">jdbc:mysql://localhost:3307/test?serverTimezone=GMT%2B8</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds1.driver-class-name</span>=<span class="string">com.mysql.jdbc.Driver</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds1.username</span>=<span class="string">root</span></span><br><span class="line"><span class="meta">spring.shardingsphere.datasource.ds1.password</span>=<span class="string"></span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分库策略</span></span><br><span class="line"><span class="comment"># 分库的列是user_id</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.default-database-strategy.standard.sharding-column</span>=<span class="string">user_id</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.default-database-strategy.standard.precise-algorithm-class-name</span>=<span class="string">com.sinosun.demo.sharding.PreciseShardingAlgorithmImpl</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 分表策略</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order.actual-data-nodes</span>=<span class="string">ds$-&gt;&#123;0..1&#125;.t_order$-&gt;&#123;0..1&#125;</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order.table-strategy.inline.sharding-column</span>=<span class="string">order_id</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order.table-strategy.inline.algorithm-expression</span>=<span class="string">t_order$-&gt;&#123;order_id % 2&#125;</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order.key-generator.column</span>=<span class="string">order_id</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order.key-generator.type</span>=<span class="string">SNOWFLAKE</span></span><br><span class="line"></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order_item.actual-data-nodes</span>=<span class="string">ds$-&gt;&#123;0..1&#125;.t_order_item$-&gt;&#123;0..1&#125;</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order_item.table-strategy.inline.sharding-column</span>=<span class="string">order_id</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_order_item.table-strategy.inline.algorithm-expression</span>=<span class="string">t_order_item$-&gt;&#123;order_id % 2&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定表</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.binding-tables</span>=<span class="string">t_order, t_order_item</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 广播表, 其主节点是ds0</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.broadcast-tables</span>=<span class="string">t_config</span></span><br><span class="line"><span class="meta">spring.shardingsphere.sharding.tables.t_config.actual-data-nodes</span>=<span class="string">ds$-&gt;&#123;0&#125;.t_config</span></span><br></pre></td></tr></table></figure>
+<h2 id="在spring中使用datasource"><a class="markdownIt-Anchor" href="#在spring中使用datasource"></a> 在Spring中使用DataSource</h2>
+<p>直接通过注入的方式即可使用DataSource，或者将DataSource配置在JPA、Hibernate或MyBatis中使用。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> DataSource dataSource;</span><br></pre></td></tr></table></figure>
+<p>更多详细使用请参考： <a href="https://shardingsphere.apache.org/document/current/cn/user-manual/shardingsphere-jdbc/" target="_blank" rel="noopener"><strong>shardingsphere-jdbc使用手册</strong></a></p>
+<h1 id="参考"><a class="markdownIt-Anchor" href="#参考"></a> 参考</h1>
+<p><a href="https://shardingsphere.apache.org/document/current/cn/overview/" target="_blank" rel="noopener">shardingsphere官方文档</a></p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:shaolin5772@gmail.com">毛毛是只猫</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://lshaolin.github.io/posts/e4c595e8/">http://lshaolin.github.io/posts/e4c595e8/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://lshaolin.github.io" target="_blank">毛毛是只猫</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/">分库分表</a><a class="post-meta__tags" href="/tags/ShardingSphere-JDBC/">ShardingSphere-JDBC</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/tcp-three-handshakes-four-waves/1.png" data-sites="wechat,weibo,qq,facebook,twitter"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><nav class="pagination_post" id="pagination"><div class="prev-post pull_left"><a href="/posts/818596de/"><img class="prev_cover lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/beanutil/1.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">常见Bean映射工具分析评测</div></div></a></div><div class="next-post pull_right"><a href="/posts/8a25b5de/"><img class="next_cover lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/java-time-1970/1.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Java为啥计算时间从1970-1-1开始</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fa fa-fw fa-thumbs-up" aria-hidden="true"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/posts/a3a0c28e/" title="分库分表"><img class="relatedPosts_cover lazyload"data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table/1.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2019-03-02</div><div class="relatedPosts_title">分库分表</div></div></a></div><div class="relatedPosts_item"><a href="/posts/4486a01d/" title="分库分表中间件选型和分库分表流程"><img class="relatedPosts_cover lazyload"data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/0.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2019-03-08</div><div class="relatedPosts_title">分库分表中间件选型和分库分表流程</div></div></a></div></div><div class="clear_both"></div></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2020 By 毛毛是只猫</div></div></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><i class="fa fa-book" id="readmode" title="阅读模式"></i><i class="fa fa-plus" id="font_plus" title="放大字体"></i><i class="fa fa-minus" id="font_minus" title="缩小字体"></i><a class="translate_chn_to_cht" id="translateLink" href="javascript:translatePage();" title="简繁转换" target="_self">繁</a><i class="darkmode fa fa-moon-o" id="darkmode" title="夜间模式"></i></div><div id="rightside-config-show"><div id="rightside_config" title="设置"><i class="fa fa-cog" aria-hidden="true"></i></div><i class="fa fa-list-ul close" id="mobile-toc-button" title="目录" aria-hidden="true"></i><i class="fa fa-arrow-up" id="go-up" title="回到顶部" aria-hidden="true"></i></div></section><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div></div><hr/><div id="local-search-results"><div id="local-hits"></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page@latest/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/lazysizes@latest/lazysizes.min.js" async=""></script><script src="https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js"></script><script>document.addEventListener('DOMContentLoaded', function() {
+      pangu.spacingElementById('content-inner')
+})</script><script src="/js/search/local-search.js"></script><script>if (document.getElementsByClassName('mermaid').length) {
+  loadScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',function () {
+    mermaid.initialize({
+      theme: 'default',
+  })
+})
+}</script></body></html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>分库分表中间件选型和分库分表流程 | 毛毛是只猫</title><meta name="description" content="分库分表中间件选型和分库分表流程"><meta name="keywords" content="分库分表,分布式"><meta name="author" content="毛毛是只猫,shaolin5772@gmail.com"><meta name="copyright" content="毛毛是只猫"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.ico"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta name="google-site-verification" content="Lm0ZzjjDMCHOP7hcY8bfpRZGIaWB6o9v_dc_2W9Q_v8"/><meta name="msvalidate.01" content="E375EB81C6D19EA02C6C466312C77F5A"/><meta name="baidu-site-verification" content="Q883WJJeIi"/><meta name="twitter:card" content="summary"><meta name="twitter:title" content="分库分表中间件选型和分库分表流程"><meta name="twitter:description" content="分库分表中间件选型和分库分表流程"><meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/0.png"><meta property="og:type" content="article"><meta property="og:title" content="分库分表中间件选型和分库分表流程"><meta property="og:url" content="http://lshaolin.github.io/posts/4486a01d/"><meta property="og:site_name" content="毛毛是只猫"><meta property="og:description" content="分库分表中间件选型和分库分表流程"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/0.png"><script src="https://cdn.jsdelivr.net/npm/js-cookie/dist/js.cookie.min.js"></script><script>var autoChangeMode = '1'
+var t = Cookies.get("theme")
+if (autoChangeMode == '1'){
+  var isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+  var isLightMode = window.matchMedia("(prefers-color-scheme: light)").matches
+  var isNotSpecified = window.matchMedia("(prefers-color-scheme: no-preference)").matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined){
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport){
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour < 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+  }
+  } else if (t == 'light') activateLightMode()
+  else activateDarkMode()
+
+} else if (autoChangeMode == '2'){
+  now = new Date();
+  hour = now.getHours();
+  isNight = hour < 6 || hour >= 18
+  if(t === undefined) isNight? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode() 
+} else {
+  if ( t == 'dark' ) activateDarkMode()
+  else if ( t == 'light') activateLightMode()
+}
+
+function activateDarkMode(){
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+    document.querySelector('meta[name="theme-color"]').setAttribute('content','#000')
+  }
+}
+function activateLightMode(){
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#fff')
+  }
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="canonical" href="http://lshaolin.github.io/posts/4486a01d/"><link rel="prev" title="MySQL LEFT JOIN 只取被关联表中一条数据" href="http://lshaolin.github.io/posts/29a14022/"><link rel="next" title="分库分表" href="http://lshaolin.github.io/posts/a3a0c28e/"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"cookieDomain":"https://lshaolin.github.io/","msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: undefined,
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  highlightShrink: 'false',
+  isFontAwesomeV5: false,
+  isPhotoFigcaption: true
+  
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isSidebar: true  
+  }</script><noscript><style>
+#page-header {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript><meta name="generator" content="Hexo 4.2.0"></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avatar.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">17</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">20</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">7</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于</span></a></div></div></div></div><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true">     </i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#引言"><span class="toc-number">1.</span> <span class="toc-text"> 引言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#中间件切入层介绍"><span class="toc-number">2.</span> <span class="toc-text"> 中间件切入层介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#编码层"><span class="toc-number">2.1.</span> <span class="toc-text"> 编码层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#框架层"><span class="toc-number">2.2.</span> <span class="toc-text"> 框架层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#驱动层"><span class="toc-number">2.3.</span> <span class="toc-text"> 驱动层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代理层"><span class="toc-number">2.4.</span> <span class="toc-text"> 代理层</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实现层"><span class="toc-number">2.5.</span> <span class="toc-text"> 实现层</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#驱动层和代理层对比"><span class="toc-number">3.</span> <span class="toc-text"> 驱动层和代理层对比</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#驱动层特点"><span class="toc-number">3.1.</span> <span class="toc-text"> 驱动层特点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#仅支持单语言支持丰富的db"><span class="toc-number">3.1.1.</span> <span class="toc-text"> 仅支持单语言，支持丰富的DB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#占用较多的数据库连接"><span class="toc-number">3.1.2.</span> <span class="toc-text"> 占用较多的数据库连接</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#数据聚合在业务实例执行"><span class="toc-number">3.1.3.</span> <span class="toc-text"> 数据聚合在业务实例执行</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#集中式管理"><span class="toc-number">3.1.4.</span> <span class="toc-text"> 集中式管理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代理层特点"><span class="toc-number">3.2.</span> <span class="toc-text"> 代理层特点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#异构支持db支持有限"><span class="toc-number">3.2.1.</span> <span class="toc-text"> 异构支持，DB支持有限</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#运维负担大"><span class="toc-number">3.2.2.</span> <span class="toc-text"> 运维负担大</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#中间件选择"><span class="toc-number">4.</span> <span class="toc-text"> 中间件选择</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#几个常用的中间件简介"><span class="toc-number">4.1.</span> <span class="toc-text"> 几个常用的中间件简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#cobar"><span class="toc-number">4.1.1.</span> <span class="toc-text"> Cobar</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#mycat"><span class="toc-number">4.1.2.</span> <span class="toc-text"> MyCAT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sharding-jdbc"><span class="toc-number">4.1.3.</span> <span class="toc-text"> sharding-JDBC</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ddb"><span class="toc-number">4.1.4.</span> <span class="toc-text"> DDB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#oneproxy"><span class="toc-number">4.1.5.</span> <span class="toc-text"> OneProxy</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#oceanus"><span class="toc-number">4.1.6.</span> <span class="toc-text"> Oceanus</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#vitess"><span class="toc-number">4.1.7.</span> <span class="toc-text"> Vitess</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#分库分表使用注意点"><span class="toc-number">5.</span> <span class="toc-text"> 分库分表使用注意点</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#分库分表流程与解决方案"><span class="toc-number">6.</span> <span class="toc-text"> 分库分表流程与解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#信息收集"><span class="toc-number">6.1.</span> <span class="toc-text"> 信息收集</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#统计影响的业务和项目"><span class="toc-number">6.1.1.</span> <span class="toc-text"> 统计影响的业务和项目</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#确定参与人员"><span class="toc-number">6.1.2.</span> <span class="toc-text"> 确定参与人员</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#确定分库分表策略"><span class="toc-number">6.1.3.</span> <span class="toc-text"> 确定分库分表策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#前期准备"><span class="toc-number">6.2.</span> <span class="toc-text"> 前期准备</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#数据规整"><span class="toc-number">6.2.1.</span> <span class="toc-text"> 数据规整</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#扫描所有sql"><span class="toc-number">6.2.2.</span> <span class="toc-text"> 扫描所有SQL</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#验证工具支持"><span class="toc-number">6.2.3.</span> <span class="toc-text"> 验证工具支持</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#技术准备"><span class="toc-number">6.2.4.</span> <span class="toc-text"> 技术准备</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实施阶段"><span class="toc-number">6.3.</span> <span class="toc-text"> 实施阶段</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#数据迁移"><span class="toc-number">6.3.1.</span> <span class="toc-text"> 数据迁移</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#充足的测试"><span class="toc-number">6.3.2.</span> <span class="toc-text"> 充足的测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sql复验"><span class="toc-number">6.3.3.</span> <span class="toc-text"> SQL复验</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#演练"><span class="toc-number">6.3.4.</span> <span class="toc-text"> 演练</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#制定新的sql规范"><span class="toc-number">6.3.5.</span> <span class="toc-text"> 制定新的SQL规范</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#结语"><span class="toc-number">7.</span> <span class="toc-text"> 结语</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考"><span class="toc-number">8.</span> <span class="toc-text"> 参考</span></a></li></ol></div></div></div><div id="body-wrap"><div class="post-bg" id="nav" style="background-image: url(https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/0.png)"><div id="page-header"><span class="pull_left" id="blog_name"><a class="blog_title" id="site-name" href="/">毛毛是只猫</a></span><span class="pull_right menus"><div id="search_button"><a class="site-page social-icon search"><i class="fa fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fa fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fa fa-bars fa-fw" aria-hidden="true"></i></a></span></span></div><div id="post-info"><div id="post-title"><div class="posttitle">分库分表中间件选型和分库分表流程</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2019-03-08 19:43:46"><i class="fa fa-calendar" aria-hidden="true"></i> 发表于 2019-03-08</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-10-28 16:34:58"><i class="fa fa-history" aria-hidden="true"></i> 更新于 2020-10-28</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fa fa-inbox post-meta__icon" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span></div><div class="meta-secondline"> <span class="post-meta-wordcount"><i class="post-meta__icon fa fa-file-word-o" aria-hidden="true"></i><span>字数总计:</span><span class="word-count">4.2k</span><span class="post-meta__separator">|</span><i class="post-meta__icon fa fa-clock-o" aria-hidden="true"></i><span>阅读时长: 12 分钟</span></span></div><div class="meta-thirdline"><span class="post-meta-pv-cv"><span class="post-meta__separator">|</span><i class="fa fa-eye post-meta__icon" aria-hidden="true"> </i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"></span></div></div></div></div><main class="layout_post" id="content-inner"><article id="post"><div id="article-container"><h1 id="引言"><a class="markdownIt-Anchor" href="#引言"></a> 引言</h1>
+<p><a href="/posts/a3a0c28e/">上一篇</a>讲到了分库分表和分库分表的中间件，这篇就来讲讲怎么选择中间件和分库分表使用的流程。</p>
+<h1 id="中间件切入层介绍"><a class="markdownIt-Anchor" href="#中间件切入层介绍"></a> 中间件切入层介绍</h1>
+<p>如下图，从应用程序到数据大体分为以下五层。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/1.png"  alt="中间件切入层" title="中间件切入层" /></p>
+<h2 id="编码层"><a class="markdownIt-Anchor" href="#编码层"></a> 编码层</h2>
+<p>在同一个项目中创建多个数据源，采用if else的方式，直接根据条件在代码中路由。Spring中有动态切换数据源的抽象类，具体参见<code>AbstractRoutingDataSource</code>。</p>
+<p>如果项目不是很庞大，使用这种方式能够快速的进行分库。但缺点也是显而易见的，需要编写大量的代码，照顾到每个分支。当涉及跨库查询、聚合，需要循环计算结果并合并的场景，工作量巨大。</p>
+<p>如果项目裂变，此类代码大多不能共用，大多通过拷贝共享。长此以往，码将不码。</p>
+<h2 id="框架层"><a class="markdownIt-Anchor" href="#框架层"></a> 框架层</h2>
+<p>这种情况适合公司ORM框架统一的情况，但在很多情况下不太现实。主要是修改或增强现有ORM框架的功能，在SQL中增加一些自定义原语或者<code>hint</code>来实现。</p>
+<p>通过实现一些拦截器（比如<code>Mybatis</code>的<code>Interceptor</code>接口），增加一些自定义解析来控制数据的流向，效果虽然较好，但会改变一些现有的编程经验。</p>
+<p>很多情况要修改框架源码，不推荐。</p>
+<h2 id="驱动层"><a class="markdownIt-Anchor" href="#驱动层"></a> 驱动层</h2>
+<p>基于在编码层和框架层切入的各种缺点，真正的数据库中间件起码要从驱动层开始。什么意思呢？其实就是重新编写了一个JDBC的驱动，在内存中维护一个路由列表，然后将请求转发到真正的数据库连接中。</p>
+<p>像<code>TDDL</code>、<code>ShardingJDBC</code>等，都是在此层切入。</p>
+<p>包括Mysql Connector/J的<code>Failover</code>协议 (具体指“load balancing”、“replication”、“farbic”等），也是直接在驱动上进行修改。</p>
+<p>请求流向一般是这样的：<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/2.png"  alt="驱动层请求流向" title="驱动层请求流向" /></p>
+<h2 id="代理层"><a class="markdownIt-Anchor" href="#代理层"></a> 代理层</h2>
+<p>代理层的数据库中间件，将自己伪装成一个数据库，接受业务端的链接。然后负载业务端的请求，解析或者转发到真正的数据库中。</p>
+<p>像<code>MySQL Router</code>、<code>MyCat</code>等，都是在此层切入。<br />
+请求流向一般是这样的：<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/3.png"  alt="代理层请求流向" title="代理层请求流向" /></p>
+<h2 id="实现层"><a class="markdownIt-Anchor" href="#实现层"></a> 实现层</h2>
+<p>SQL特殊版本支持，如<code>Mysql cluster</code>本身就支持各种特性，<code>mariadb galera cluster</code>支持对等双主，<code>Greenplum</code>支持分片等。</p>
+<p>需要换存储，一般是解决方案，就不在讨论之列了。</p>
+<p>通过以上层次描述，很明显，我们选择或开发中间件，就集中在驱动层和代理层。在这两层，能够对数据库连接和路由进行更强的控制和更细致的管理。但它们的区别也是明显的。</p>
+<h1 id="驱动层和代理层对比"><a class="markdownIt-Anchor" href="#驱动层和代理层对比"></a> 驱动层和代理层对比</h1>
+<h2 id="驱动层特点"><a class="markdownIt-Anchor" href="#驱动层特点"></a> 驱动层特点</h2>
+<h3 id="仅支持单语言支持丰富的db"><a class="markdownIt-Anchor" href="#仅支持单语言支持丰富的db"></a> 仅支持单语言，支持丰富的DB</h3>
+<p>一般在驱动层的中间件，就是针对单语言的，比如：sharding-jdbc仅支持java。如果你的开发语言固定，后端数据源类型丰富，推荐使用此方案。</p>
+<h3 id="占用较多的数据库连接"><a class="markdownIt-Anchor" href="#占用较多的数据库连接"></a> 占用较多的数据库连接</h3>
+<p>驱动层中间件要维护很多数据库连接。比如一个分了10个 库 的表，每个java中的Connection要维护10个数据库连接。如果项目过多，则会出现连接爆炸（我们算一下，如果每个项目6个实例，连接池中minIdle等于5，3个项目的连接总数是 10<em>6</em>5*3 = 900 个）。像Postgres这种每个连接对应一个进程的数据库，压力会很大。</p>
+<h3 id="数据聚合在业务实例执行"><a class="markdownIt-Anchor" href="#数据聚合在业务实例执行"></a> 数据聚合在业务实例执行</h3>
+<p>数据聚合，比如<code>count</code> <code>sum</code>等，是通过多次查询，然后在业务实例的内存中进行聚合。</p>
+<p>路由表存在于业务方实例内存中，通过轮询或者被动通知的途径更新路由表即可。</p>
+<h3 id="集中式管理"><a class="markdownIt-Anchor" href="#集中式管理"></a> 集中式管理</h3>
+<p>所有集群的配置管理都集中在一个地方，运维负担小，DBA即可完成相关操作。</p>
+<h2 id="代理层特点"><a class="markdownIt-Anchor" href="#代理层特点"></a> 代理层特点</h2>
+<h3 id="异构支持db支持有限"><a class="markdownIt-Anchor" href="#异构支持db支持有限"></a> 异构支持，DB支持有限</h3>
+<p>代理层中间件正好相反。仅支持一种后端关系型数据库，但支持多种开发语言。如果你的系统是异构的，并且都有同样的SLA要求，则推荐使用此方案。</p>
+<h3 id="运维负担大"><a class="markdownIt-Anchor" href="#运维负担大"></a> 运维负担大</h3>
+<p>代理层需要维护数据库连接数量有限（MySQL Router那种粘性连接除外）。但作为一个独立的服务，既要考虑单独部署，又要考虑高可用，会增加很多额外节点，更别提用了影子节点的公司了。<br />
+另外，代理层是请求唯一的入口，稳定性要求极高，一旦有高耗内存的聚合查询把节点搞崩溃了，都是灾难性的事故。</p>
+<h1 id="中间件选择"><a class="markdownIt-Anchor" href="#中间件选择"></a> 中间件选择</h1>
+<p>建议聚焦在<code>MyCat</code>和<code>ShardingJDBC</code>上。另外，还有大量其他的中间件，不熟悉建议不要妄动。<br />
+数据库中间件不好维护，你会发现大量半死不活的项目。</p>
+<p>以下列表，排名不分先后，有几个是只有HA功能，没有拆分功能的：</p>
+<p>Atlas、Kingshard、DBProxy、mysql router、MaxScale、58 Oceanus、OneProxy、ArkProxy、Ctrip DAL、Tsharding、vitess、DDB、Heisenberg、proxysql、Mango、DDAL、Datahekr、MTAtlas、MTDDL、Zebra、Cobar</p>
+<h2 id="几个常用的中间件简介"><a class="markdownIt-Anchor" href="#几个常用的中间件简介"></a> 几个常用的中间件简介</h2>
+<h3 id="cobar"><a class="markdownIt-Anchor" href="#cobar"></a> Cobar</h3>
+<p><a href="https://github.com/alibaba/cobar" target="_blank" rel="noopener">Cobar</a> 是提供关系型数据库（MySQL）分布式服务的中间件，它可以让传统的数据库得到良好的线性扩展，并看上去还是一个数据库，对应用保持透明。<br />
+Cobar属于阿里B2B事业群，始于2008年，在阿里服役3年多，接管3000+个MySQL数据库的schema,集群日处理在线SQL请求50亿次以上,集群日处理在线数据流量TB级别以上。<br />
+Cobar以Proxy的形式位于前台应用和实际数据库之间，对前台的开放的接口是MySQL通信协议，将前台SQL语句变更并按照数据分布规则发到合适的后台数据分库，再合并返回结果，模拟单库下的数据库行为。<br />
+Cobar属于中间层方案，在应用程序和MySQL之间搭建一层Proxy。中间层介于应用程序与数据库间，需要做一次转发，而基于JDBC协议并无额外转发，直接由应用程序连接数据库，性能上有些许优势。这里并非说明中间层一定不如客户端直连，除了性能，需要考虑的因素还有很多，中间层更便于实现监控、数据迁移、连接管理等功能。<br />
+由于Cobar发起人的离职，Cobar停止维护。后续的类似中间件，比如MyCAT建立于Cobar之上，包括现在阿里服役的RDRS其中也复用了Cobar-Proxy的相关代码。</p>
+<h3 id="mycat"><a class="markdownIt-Anchor" href="#mycat"></a> MyCAT</h3>
+<p><a href="http://www.mycat.io/" target="_blank" rel="noopener">MyCAT</a>是社区爱好者在阿里cobar基础上进行二次开发，解决了cobar当时存 在的一些问题，并且加入了许多新的功能在其中。目前MyCAT社区活 跃度很高，目前已经有一些公司在使用MyCAT。总体来说支持度比 较高，也会一直维护下去，发展到目前的版本，已经不是一个单纯的MySQL代理了，它的后端可以支持MySQL, SQL Server, Oracle, DB2, PostgreSQL等主流数据库，也支持MongoDB这种新型NoSQL方式的存储，未来还会支持更多类型的存储。<br />
+MyCAT是一个强大的数据库中间件，不仅仅可以用作读写分离，以及分表分库、容灾管理，而且可以用于多租户应用开发、云平台基础设施，让你的架构具备很强的适应性和灵活性，借助于即将发布的MyCAT只能优化模块，系统的数据访问瓶颈和热点一目了然，根据这些统计分析数据，你可以自动或手工调整后端存储，将不同的表隐射到不同存储引擎上，而整个应用的代码一行也不用改变。<br />
+MyCAT是在Cobar基础上发展的版本，两个显著提高：后端由BIO改为NIO，并发量有大幅提高； 增加了对Order By, Group By, Limit等聚合功能（虽然Cobar也可以支持Order By, Group By, Limit语法，但是结果没有进行聚合，只是简单返回给前端，聚合功能还是需要业务系统自己完成）。</p>
+<h3 id="sharding-jdbc"><a class="markdownIt-Anchor" href="#sharding-jdbc"></a> sharding-JDBC</h3>
+<p><a href="https://github.com/sharding-sphere" target="_blank" rel="noopener">sharding-JDBC</a>是当当应用框架ddframe中，从关系型数据库模块dd-rdb中分离出来的数据库水平分片框架，实现透明化数据库分库分表访问(目前已更名为ShardingSphere-JDBC)。<br />
+定位为轻量级 Java 框架，在 Java 的 JDBC 层提供的额外服务。 它使用客户端直连数据库，以 jar 包形式提供服务，无需额外部署和依赖，可理解为增强版的 JDBC 驱动，完全兼容 JDBC 和各种 ORM 框架。</p>
+<ul>
+<li>适用于任何基于 JDBC 的 ORM 框架，如：JPA, Hibernate, Mybatis, Spring JDBC Template 或直接使用 JDBC。</li>
+<li>支持任何第三方的数据库连接池，如：DBCP, C3P0, BoneCP, Druid, HikariCP 等。</li>
+<li>支持任意实现 JDBC 规范的数据库，目前支持 MySQL，Oracle，SQLServer，PostgreSQL 以及任何遵循 SQL92 标准的数据库。</li>
+</ul>
+<h3 id="ddb"><a class="markdownIt-Anchor" href="#ddb"></a> DDB</h3>
+<p>网易. Distributed DataBase.<br />
+DDB经历了三次服务模式的重大更迭：Driver模式-&gt;Proxy模式-&gt;云模式。<br />
+Driver模式：基于JDBC驱动访问，提供一个db.jar, 和TDDL类似， 位于应用层和JDBC之间. Proxy模式：在DDB中搭建了一组代理服务器来提供标准的MySQL服务，在代理服务器内部实现分库分表的逻辑。应用通过标准数据库驱动访问DDB Proxy, Proxy内部通过MySQL解码器将请求还原为SQL, 并由DDB Driver执行得到结果。<br />
+私有云模式：基于网易私有云开发的一套平台化管理工具Cloudadmin, 将DDB原先Master的功能打散，一部分分库相关功能集成到proxy中，如分库管理、表管理、用户管理等，一部分中心化功能集成到Cloudadmin中，如报警监控，此外，Cloudadmin中提供了一键部署、自动和手动备份，版本管理等平台化功能。</p>
+<h3 id="oneproxy"><a class="markdownIt-Anchor" href="#oneproxy"></a> OneProxy</h3>
+<p>数据库界大牛，前支付宝数据库团队领导楼方鑫开发，基于mysql官方 的proxy思想利用c进行开发的，OneProxy是一款商业收费的中间件， 楼总舍去了一些功能点，专注在性能和稳定性上。有朋友测试过说在 高并发下很稳定。</p>
+<h3 id="oceanus"><a class="markdownIt-Anchor" href="#oceanus"></a> Oceanus</h3>
+<p>58同城数据库中间件，Oceanus致力于打造一个功能简单、可依赖、易于上手、易于扩展、易于集成的解决方案，甚至是平台化系统。拥抱开源，提供各类插件机制集成其他开源项目，新手可以在几分钟内上手编程，分库分表逻辑不再与业务紧密耦合，扩容有标准模式，减少意外错误的发生。</p>
+<h3 id="vitess"><a class="markdownIt-Anchor" href="#vitess"></a> Vitess</h3>
+<p>这个中间件是Youtube生产在使用的，但是架构很复杂。 与以往中间件不同，使用Vitess应用改动比较大要 使用他提供语言的API接口，我们可以借鉴他其中的一些设计思想。</p>
+<h1 id="分库分表使用注意点"><a class="markdownIt-Anchor" href="#分库分表使用注意点"></a> 分库分表使用注意点</h1>
+<p><strong>确保数据均衡</strong> 拆分数据库的数据尽量均匀，比如按省份分user库不均匀，按userid取模会比较均匀<br />
+<strong>不用深分页</strong> 不带切分键的深分页，会取出所有库所取页数之前的所有数据在内存排序计算。容易造成内存溢出。<br />
+<strong>减少子查询</strong> 子查询会造成SQL解析紊乱，解析错误的情况，尽量减少SQL的子查询。<br />
+<strong>事务最小原则</strong> 尽量缩小单机事务涉及的库范围，即尽可能减少夸库操作，将同类操作的库/表分在一起<br />
+<strong>特殊函数</strong> distinct、having、union、in、or等，一般不被支持。或者被支持，使用之后会增加风险，需要改造。</p>
+<h1 id="分库分表流程与解决方案"><a class="markdownIt-Anchor" href="#分库分表流程与解决方案"></a> 分库分表流程与解决方案</h1>
+<p>无论是采用哪个层面切入进行分库分表，都面临以下工作过程。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/4.png"  alt="分库分表工作过程" title="分库分表工作过程" /></p>
+<h2 id="信息收集"><a class="markdownIt-Anchor" href="#信息收集"></a> 信息收集</h2>
+<h3 id="统计影响的业务和项目"><a class="markdownIt-Anchor" href="#统计影响的业务和项目"></a> 统计影响的业务和项目</h3>
+<p>项目范围越大，分库难度越高。有时候，一句复杂的SQL能够涉及四五个业务方，这种SQL都是需要重点关注的。<br />
+确定分库分表的规模，是只分其中的几张表，还是全部涉及。分的越多，工作量越大，几乎是线性的。还有一些项目是牵一发动全身的。</p>
+<h3 id="确定参与人员"><a class="markdownIt-Anchor" href="#确定参与人员"></a> 确定参与人员</h3>
+<p>除了分库分表组件的技术支持人员，最应该参与的是对系统、对现有代码最熟悉的几个人。只有他们能够确定哪些SQL该废弃掉、SQL的影响面等。</p>
+<h3 id="确定分库分表策略"><a class="markdownIt-Anchor" href="#确定分库分表策略"></a> 确定分库分表策略</h3>
+<p>确定分库分表的维度和切分键。切分键（就是路由数据的column）一旦确定，是不允许修改的，所以在前期架构设计上，应该首先将其确立下来，才能进行后续的工作；数据维度多意味着有不同的切分键，达到不同条件查询的效果。这涉及到数据的冗余（多写、数据同步），会更加复杂。</p>
+<h2 id="前期准备"><a class="markdownIt-Anchor" href="#前期准备"></a> 前期准备</h2>
+<h3 id="数据规整"><a class="markdownIt-Anchor" href="#数据规整"></a> 数据规整</h3>
+<p>库表结构不满足需求，需要提前规整。比如，切分键的字段名称不同或者类型各异。在实施分库分表策略时，这些个性会造成策略过大不好维护。</p>
+<h3 id="扫描所有sql"><a class="markdownIt-Anchor" href="#扫描所有sql"></a> 扫描所有SQL</h3>
+<p>将项目中所有的SQL扫描出来，逐个判断是否能够按照切分键正常运行。<br />
+在判断过程中肯定会有大量不合规的SQL，则都需要给出改造方案，这是主要的工作量之一。</p>
+<h3 id="验证工具支持"><a class="markdownIt-Anchor" href="#验证工具支持"></a> 验证工具支持</h3>
+<p>直接在原有项目上进行改动和验证是可行的，但会遇到诸多问题，主要是效率太低。我倾向于首先设计一些验证工具，输入要验证的SQL或者列表，然后打印路由信息和结果进行判断。</p>
+<h3 id="技术准备"><a class="markdownIt-Anchor" href="#技术准备"></a> 技术准备</h3>
+<p>建议以下提到的各个点，都找一个例子体验一下，然后根据自己的团队预估难度。以下：</p>
+<ul>
+<li>中间件所有不支持的SQL类型</li>
+<li>整理容易造成崩溃的注意事项</li>
+<li>不支持的SQL给出处理方式</li>
+<li>考虑一个通用的主键生成器</li>
+<li>考虑没有切分键的SQL如何处理</li>
+<li>考虑定时任务等扫全库的如何进行遍历</li>
+<li>考虑跨库跨表查询如何改造</li>
+<li>准备一些工具集</li>
+</ul>
+<h2 id="实施阶段"><a class="markdownIt-Anchor" href="#实施阶段"></a> 实施阶段</h2>
+<h3 id="数据迁移"><a class="markdownIt-Anchor" href="#数据迁移"></a> 数据迁移</h3>
+<p>分库分表会重新影响数据的分布，无论是全量还是增量，都会涉及到数据迁移，所以Databus是必要的。一种理想的状态是所有的增删改都是消息，可以通过订阅MQ进行双写。但一般情况下，仍然需要去模拟这个状态，比如使用Canal组件。<br />
+<img src="/" class="lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table-middleware/5.png"  alt="通过Canal模拟消息双写" title="通过Canal模拟消息双写" /></p>
+<h3 id="充足的测试"><a class="markdownIt-Anchor" href="#充足的测试"></a> 充足的测试</h3>
+<p>分库分表必须经过充足的测试，每一句SQL都要经过严格的验证。如果有单元测试或者自动化测试工具，完全的覆盖是必要的。一旦有数据进行了错误的路由，尤其是增删改，将会创造大量的麻烦。在测试阶段，将验证过程输出到单独的日志文件，充足测试后review日志文件是否有错误的数据流向。</p>
+<h3 id="sql复验"><a class="markdownIt-Anchor" href="#sql复验"></a> SQL复验</h3>
+<p>强烈建议统一进行一次SQL复验。主要是根据功能描述，确定SQL的正确性，也就是通常说的review。</p>
+<h3 id="演练"><a class="markdownIt-Anchor" href="#演练"></a> 演练</h3>
+<p>在非线上环境多次对方案进行演练，确保万无一失。</p>
+<h3 id="制定新的sql规范"><a class="markdownIt-Anchor" href="#制定新的sql规范"></a> 制定新的SQL规范</h3>
+<p>分库分表以后，项目中的SQL就加了枷锁，不能够随意书写了。很多平常支持的操作，在拆分环境下就可能运行不了了。所以在上线前，涉及的SQL都应该有一个确认过程，即使已经经过了充足的测试。</p>
+<h1 id="结语"><a class="markdownIt-Anchor" href="#结语"></a> 结语</h1>
+<p>分库分表是战略性的技术方案，很多情况无法回退或者回退方案复杂。如果要拆分的库表涉及多个业务方，公司技术人员复杂，CTO要亲自挂帅进行协调，并有专业仔细的架构师进行监督。没有授权的协调人员会陷入尴尬的境地，导致流程失控项目难产。</p>
+<h1 id="参考"><a class="markdownIt-Anchor" href="#参考"></a> 参考</h1>
+<p><a href="https://segmentfault.com/a/1190000017272697" target="_blank" rel="noopener">分库分表？选型和流程要慎重，否则会失控</a><br />
+<a href="https://blog.csdn.net/xuheng8600/article/details/80336094" target="_blank" rel="noopener">数据库分库分表中间件对比</a><br />
+<a href="https://segmentfault.com/a/1190000021755246" target="_blank" rel="noopener">深入数据库分区分库分表</a></p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:shaolin5772@gmail.com">毛毛是只猫</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://lshaolin.github.io/posts/4486a01d/">http://lshaolin.github.io/posts/4486a01d/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://lshaolin.github.io" target="_blank">毛毛是只猫</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%88%86%E5%BA%93%E5%88%86%E8%A1%A8/">分库分表</a><a class="post-meta__tags" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/tcp-three-handshakes-four-waves/1.png" data-sites="wechat,weibo,qq,facebook,twitter"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><nav class="pagination_post" id="pagination"><div class="prev-post pull_left"><a href="/posts/29a14022/"><img class="prev_cover lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/mysql-left-join-orderby/cover.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">MySQL LEFT JOIN 只取被关联表中一条数据</div></div></a></div><div class="next-post pull_right"><a href="/posts/a3a0c28e/"><img class="next_cover lazyload" data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table/1.png" onerror="onerror=null;src='https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/common/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">分库分表</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fa fa-fw fa-thumbs-up" aria-hidden="true"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/posts/a3a0c28e/" title="分库分表"><img class="relatedPosts_cover lazyload"data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/split-database-table/1.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2019-03-02</div><div class="relatedPosts_title">分库分表</div></div></a></div><div class="relatedPosts_item"><a href="/posts/e4c595e8/" title="ShardingSphere-JDBC原理与使用"><img class="relatedPosts_cover lazyload"data-src="https://cdn.jsdelivr.net/gh/lshaolin/repo@latest/img/post/sharding-jdbc/1.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2019-05-12</div><div class="relatedPosts_title">ShardingSphere-JDBC原理与使用</div></div></a></div></div><div class="clear_both"></div></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2020 By 毛毛是只猫</div></div></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><i class="fa fa-book" id="readmode" title="阅读模式"></i><i class="fa fa-plus" id="font_plus" title="放大字体"></i><i class="fa fa-minus" id="font_minus" title="缩小字体"></i><a class="translate_chn_to_cht" id="translateLink" href="javascript:translatePage();" title="简繁转换" target="_self">繁</a><i class="darkmode fa fa-moon-o" id="darkmode" title="夜间模式"></i></div><div id="rightside-config-show"><div id="rightside_config" title="设置"><i class="fa fa-cog" aria-hidden="true"></i></div><i class="fa fa-list-ul close" id="mobile-toc-button" title="目录" aria-hidden="true"></i><i class="fa fa-arrow-up" id="go-up" title="回到顶部" aria-hidden="true"></i></div></section><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div></div><hr/><div id="local-search-results"><div id="local-hits"></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page@latest/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/lazysizes@latest/lazysizes.min.js" async=""></script><script src="https://cdn.jsdelivr.net/npm/pangu/dist/browser/pangu.min.js"></script><script>document.addEventListener('DOMContentLoaded', function() {
+      pangu.spacingElementById('content-inner')
+})</script><script src="/js/search/local-search.js"></script><script>if (document.getElementsByClassName('mermaid').length) {
+  loadScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',function () {
+    mermaid.initialize({
+      theme: 'default',
+  })
+})
+}</script></body></html>
